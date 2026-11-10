@@ -91,6 +91,9 @@ bpy.ops.object.mode_set(mode="EDIT")
 bpy.ops.mesh.select_all(action="SELECT")
 bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.mode_set(mode="OBJECT")
+
+# (Opening the sealed gallery niches by rule was tried and reverted: the planar-decimated walls are long sliver
+#  triangles, so niche vs wall can't be separated cleanly. Needs hand modelling; see PROJECT.md.)
 bpy.ops.object.shade_auto_smooth(angle=0.6) if hasattr(bpy.ops.object, "shade_auto_smooth") else None
 
 # 3) UV unwrap for the AO bake
@@ -134,9 +137,9 @@ mapping = gt.nodes.new("ShaderNodeMapping"); mapping.inputs["Scale"].default_val
 gt.links.new(coord.outputs["Object"], big.inputs["Vector"])
 gt.links.new(coord.outputs["Object"], mapping.inputs["Vector"]); gt.links.new(mapping.outputs["Vector"], streak.inputs["Vector"])
 ramp1 = gt.nodes.new("ShaderNodeValToRGB"); ramp1.color_ramp.elements[0].position = 0.42; ramp1.color_ramp.elements[1].position = 0.68
-ramp1.color_ramp.elements[0].color = (0.62, 0.62, 0.62, 1); ramp1.color_ramp.elements[1].color = (1, 1, 1, 1)
+ramp1.color_ramp.elements[0].color = (0.22, 0.22, 0.22, 1); ramp1.color_ramp.elements[1].color = (1, 1, 1, 1)
 ramp2 = gt.nodes.new("ShaderNodeValToRGB"); ramp2.color_ramp.elements[0].position = 0.35; ramp2.color_ramp.elements[1].position = 0.6
-ramp2.color_ramp.elements[0].color = (0.78, 0.78, 0.78, 1); ramp2.color_ramp.elements[1].color = (1, 1, 1, 1)
+ramp2.color_ramp.elements[0].color = (0.5, 0.5, 0.5, 1); ramp2.color_ramp.elements[1].color = (1, 1, 1, 1)
 gt.links.new(big.outputs["Fac"], ramp1.inputs["Fac"]); gt.links.new(streak.outputs["Fac"], ramp2.inputs["Fac"])
 mul = gt.nodes.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"; mul.inputs["Factor"].default_value = 1.0
 gt.links.new(ramp1.outputs["Color"], mul.inputs[6]); gt.links.new(ramp2.outputs["Color"], mul.inputs[7])
@@ -152,7 +155,7 @@ img_final = bpy.data.images.new("charminar_weathering", TEX, TEX, alpha=False)
 ao = list(img_ao.pixels); gr = list(img_grime.pixels)
 out = [0.0] * len(ao)
 for i in range(0, len(ao), 4):
-    k = (0.22 + 0.78 * ao[i]) * gr[i]
+    k = (0.08 + 0.92 * ao[i] ** 1.4) * gr[i]  # deep, near-black crevices + dark grime patches
     out[i] = out[i + 1] = out[i + 2] = k
     out[i + 3] = 1.0
 img_final.pixels = out

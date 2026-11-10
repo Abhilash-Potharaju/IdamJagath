@@ -1,5 +1,5 @@
 import {
-  Color3, HDRCubeTexture, PBRMaterial, SpotLight, Texture, TransformNode, Vector3, type AbstractMesh, type Mesh, type Scene,
+  Color3, HDRCubeTexture, PBRMaterial, Texture, TransformNode, Vector3, type Mesh, type Scene,
 } from "@babylonjs/core";
 import type { Level } from "./Level";
 import { makeSolid, place } from "./Props";
@@ -148,27 +148,9 @@ export function charminarMaterial(scene: Scene): PBRMaterial {
   const weather = new Texture(`${BASE}textures/charminar/charminar_weathering_2k.jpg`, scene, false, false);
   weather.coordinatesIndex = 0;
   m.ambientTexture = weather;
-  m.ambientTextureStrength = 0.7;
+  m.ambientTextureStrength = 0.95;
   m.useAmbientInGrayScale = true;
-  m.ambientTextureImpactOnAnalyticalLights = 0.5;
+  m.ambientTextureImpactOnAnalyticalLights = 0.85;
   return m;
 }
 
-/**
- * Warm floodlights at the Charminar's base aiming up at each face, like the monument's real night lighting.
- * They light only the monument meshes (cheap, and they don't change the rest of the scene).
- */
-export function charminarFloodlights(scene: Scene, meshes: AbstractMesh[], centre: Vector3): void {
-  const warm = Color3.FromHexString("#ffcf8a");
-  const faces: [number, number][] = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-  for (const [dx, dz] of faces) {
-    const from = new Vector3(centre.x + dx * 13, 0.4, centre.z + dz * 13);
-    const aim = new Vector3(centre.x + dx * 4, 15, centre.z + dz * 4);
-    const l = new SpotLight("charminar-flood", from, aim.subtract(from).normalize(), 1.15, 2, scene);
-    l.diffuse = warm;
-    l.specular = warm.scale(0.3);
-    l.intensity = 2.4;
-    l.range = 45;
-    l.includedOnlyMeshes = meshes;
-  }
-}
