@@ -506,15 +506,30 @@ export class Environment {
 
     const flames = this.ps("flames", 90, at.add(new Vector3(0, 0.6, 0)), new Vector3(-0.6, 0, -0.9), new Vector3(0.6, 0.2, 0.9));
     flames.color1 = new Color4(1, 0.75, 0.25, 1); flames.color2 = new Color4(1, 0.35, 0.05, 1); flames.colorDead = new Color4(0.3, 0.05, 0, 0);
-    flames.minSize = 0.35; flames.maxSize = 0.8; flames.minLifeTime = 0.3; flames.maxLifeTime = 0.7;
+    flames.minSize = 0.18; flames.maxSize = 0.45; flames.minLifeTime = 0.3; flames.maxLifeTime = 0.7;
     flames.emitRate = 70; flames.blendMode = ParticleSystem.BLENDMODE_ADD;
+    // Realistic tongues: grow, then taper; white-yellow core -> orange -> deep red -> gone
+    flames.addSizeGradient(0, 0.5); flames.addSizeGradient(0.35, 1.1); flames.addSizeGradient(1, 0.15);
+    flames.addColorGradient(0, new Color4(0.9, 0.6, 0.25, 0.55)); flames.addColorGradient(0.3, new Color4(0.85, 0.35, 0.06, 0.5));
+    flames.addColorGradient(0.7, new Color4(0.6, 0.12, 0.02, 0.35)); flames.addColorGradient(1, new Color4(0.2, 0.03, 0, 0));
+    flames.minAngularSpeed = -1.5; flames.maxAngularSpeed = 1.5;
+    // Hot low core inside the cabin
+    const core = this.ps("fire-core", 60, at.add(new Vector3(0, 0.5, 0)), new Vector3(-0.35, 0, -0.5), new Vector3(0.35, 0.15, 0.5));
+    core.minSize = 0.15; core.maxSize = 0.3; core.minLifeTime = 0.15; core.maxLifeTime = 0.3; core.emitRate = 30;
+    core.blendMode = ParticleSystem.BLENDMODE_ADD;
+    core.addColorGradient(0, new Color4(0.95, 0.75, 0.4, 0.5)); core.addColorGradient(1, new Color4(0.9, 0.35, 0.05, 0));
+    core.direction1 = new Vector3(-0.1, 1, -0.1); core.direction2 = new Vector3(0.1, 1.6, 0.1);
+    core.minEmitPower = 0.4; core.maxEmitPower = 0.8;
     flames.direction1 = new Vector3(-0.2, 2, -0.2); flames.direction2 = new Vector3(0.2, 3, 0.2);
     flames.minEmitPower = 0.6; flames.maxEmitPower = 1.2;
 
     const smoke = this.ps("smoke", 50, at.add(new Vector3(0, 1.4, 0)), new Vector3(-0.4, 0, -0.4), new Vector3(0.4, 0.2, 0.4));
     smoke.color1 = new Color4(0.18, 0.14, 0.16, 0.5); smoke.color2 = new Color4(0.1, 0.08, 0.1, 0.4); smoke.colorDead = new Color4(0.05, 0.04, 0.06, 0);
-    smoke.minSize = 1.2; smoke.maxSize = 2.6; smoke.minLifeTime = 3; smoke.maxLifeTime = 5;
-    smoke.emitRate = 9; smoke.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+    smoke.minSize = 0.9; smoke.maxSize = 1.8; smoke.minLifeTime = 4; smoke.maxLifeTime = 7;
+    smoke.emitRate = 16; smoke.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+    smoke.addSizeGradient(0, 0.6); smoke.addSizeGradient(1, 3.2); // billows outward as it rises
+    smoke.addColorGradient(0, new Color4(0.12, 0.08, 0.07, 0.65)); smoke.addColorGradient(0.5, new Color4(0.1, 0.09, 0.1, 0.4));
+    smoke.addColorGradient(1, new Color4(0.08, 0.08, 0.09, 0));
     smoke.direction1 = new Vector3(-0.3, 1, -0.1); smoke.direction2 = new Vector3(0.5, 1.6, 0.3);
     smoke.minEmitPower = 0.5; smoke.maxEmitPower = 0.9;
     smoke.minAngularSpeed = -0.4; smoke.maxAngularSpeed = 0.4;

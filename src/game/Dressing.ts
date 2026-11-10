@@ -1,6 +1,6 @@
 import { Color3, DynamicTexture, Mesh, PointLight, StandardMaterial, Vector3, type Scene } from "@babylonjs/core";
 import type { Level } from "./Level";
-import { place } from "./Props";
+import { makeSolid, place } from "./Props";
 import { dressWarDamage } from "./WarDressing";
 
 /**
@@ -163,8 +163,10 @@ export async function dressLevel(scene: Scene, level: Level): Promise<void> {
   jobs.push(place(scene, "debris.glb", new Vector3(7.5, 0, -2.2), 0, "Sandbag_Wall").then(() => solid(5.9, 9.1, -2.45, -1.95, 1)));
   jobs.push(place(scene, "debris.glb", new Vector3(2.6, 0, 1.6), -0.5, "Barricade"));
   // Rubble from shelled buildings (low, walk-over decor)
-  for (const [x, z, yaw] of [[-2.6, 18.5, 0.3], [2.4, 43, 2.1], [-20, 106, 1], [21, 66, 4], [-29, 38, 0.8]]) {
-    jobs.push(place(scene, "debris.glb", new Vector3(x, 0, z), yaw, "Rubble_Pile"));
+  // (The old scripted "Rubble_Pile" was loose blocks that read as floating stones; use the photoscanned rubble instead.)
+  for (const [file, x, z, yaw] of [["concrete_chunks", -3.1, 18.5, 0.3], ["concrete_chunks", 3.25, 44.3, 2.1],
+    ["rubble_pile", -20, 106, 1], ["rubble_pile", 21, 66, 4], ["concrete_debris", -29, 38, 0.8]] as [string, number, number, number][]) {
+    jobs.push(place(scene, `props/${file}.glb`, new Vector3(x, 0, z), yaw).then((p) => makeSolid(p)));
   }
 
   jobs.push(dressWarDamage(scene, level)); // key-art war damage: wrecks, rubble, banners, screens, decals, puddles

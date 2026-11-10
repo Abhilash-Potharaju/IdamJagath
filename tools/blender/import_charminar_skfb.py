@@ -29,7 +29,7 @@ OUT_BLEND = os.path.join(ROOT, "tools/blender/src/charminar_skfb.blend")
 
 FOOTPRINT = 17.6      # metres across the base (minaret outer edges), matches Level.ts colliders
 DECIMATE_RATIO = 0.35  # ~113k -> ~40k tris
-TEX = 2048
+TEX = 4096  # thousands of small ornament islands: 2K left each wall only a few pixels of weathering
 LIMESTONE = (0.80, 0.73, 0.62)  # warm granite/lime plaster
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -99,7 +99,8 @@ bpy.ops.object.shade_auto_smooth(angle=0.6) if hasattr(bpy.ops.object, "shade_au
 # 3) UV unwrap for the AO bake
 bpy.ops.object.mode_set(mode="EDIT")
 bpy.ops.mesh.select_all(action="SELECT")
-bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.004)
+bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.0003)  # tight packing: margins were eating most of the texture
+bpy.ops.uv.pack_islands(rotate=True, margin=0.0003)
 bpy.ops.object.mode_set(mode="OBJECT")
 
 # 4) Bake ambient occlusion (Cycles, CPU)
@@ -120,7 +121,7 @@ obj.data.materials.append(mat)
 bpy.ops.object.select_all(action="DESELECT")
 obj.select_set(True)
 bpy.context.view_layer.objects.active = obj
-bpy.ops.object.bake(type="AO", margin=4)
+bpy.ops.object.bake(type="AO", margin=2)
 
 # 5) Weathering layer: AO (contact shadows) x patchy grime (procedural noise, baked as emission) -> greyscale map.
 #    The game multiplies this over a tiling photo-scanned stone/plaster PBR material (see Beauty.ts).
@@ -143,19 +144,50 @@ ramp2.color_ramp.elements[0].color = (0.5, 0.5, 0.5, 1); ramp2.color_ramp.elemen
 gt.links.new(big.outputs["Fac"], ramp1.inputs["Fac"]); gt.links.new(streak.outputs["Fac"], ramp2.inputs["Fac"])
 mul = gt.nodes.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"; mul.inputs["Factor"].default_value = 1.0
 gt.links.new(ramp1.outputs["Color"], mul.inputs[6]); gt.links.new(ramp2.outputs["Color"], mul.inputs[7])
-emit = gt.nodes.new("ShaderNodeEmission"); gt.links.new(mul.outputs[2], emit.inputs["Color"]); gt.links.new(emit.outputs["Emission"], outn.inputs["Surface"])
+# Minaret mask: 1 near the four corner minaret axes (+-7.5, +-7.5), fading out by 2.8 m
+sep = gt.nodes.new("ShaderNodeSeparateXYZ"); gt.links.new(coord.outputs["Object"], sep.inputs["Vector"])
+def node_math(op, a=None, b=None, v1=None):
+    n = gt.nodes.new("ShaderNodeMath"); n.operation = op
+    if a is not None: gt.links.new(a, n.inputs[0])
+    if b is not None: gt.links.new(b, n.inputs[1])
+    if v1 is not None: n.inputs[1].default_value = v1
+    return n
+ax = node_math("ABSOLUTE", sep.outputs["X"]); ay = node_math("ABSOLUTE", sep.outputs["Y"])
+dx = node_math("SUBTRACT", ax.outputs[0], v1=7.5); dy = node_math("SUBTRACT", ay.outputs[0], v1=7.5)
+dx2 = node_math("MULTIPLY", dx.outputs[0], dx.outputs[0]); dy2 = node_math("MULTIPLY", dy.outputs[0], dy.outputs[0])
+dist = node_math("SQRT", node_math("ADD", dx2.outputs[0], dy2.outputs[0]).outputs[0])
+mask = gt.nodes.new("ShaderNodeMapRange"); gt.links.new(dist.outputs[0], mask.inputs["Value"])
+mask.inputs["From Min"].default_value = 1.2; mask.inputs["From Max"].default_value = 2.8
+mask.inputs["To Min"].default_value = 1.0; mask.inputs["To Max"].default_value = 0.0
+# Long dark rain/soot streaks running down the minarets
+smap = gt.nodes.new("ShaderNodeMapping"); smap.inputs["Scale"].default_value = (9.0, 9.0, 0.22)
+gt.links.new(coord.outputs["Object"], smap.inputs["Vector"])
+snoise = gt.nodes.new("ShaderNodeTexNoise"); snoise.inputs["Scale"].default_value = 1.4; snoise.inputs["Detail"].default_value = 4
+gt.links.new(smap.outputs["Vector"], snoise.inputs["Vector"])
+sramp = gt.nodes.new("ShaderNodeValToRGB"); sramp.color_ramp.elements[0].position = 0.38; sramp.color_ramp.elements[1].position = 0.62
+sramp.color_ramp.elements[0].color = (0.05, 0.05, 0.05, 1); sramp.color_ramp.elements[1].color = (0.55, 0.55, 0.55, 1)  # minarets: overall darker + near-black streaks
+gt.links.new(snoise.outputs["Fac"], sramp.inputs["Fac"])
+corner = gt.nodes.new("ShaderNodeMix"); corner.data_type = "RGBA"; corner.blend_type = "MIX"
+gt.links.new(mask.outputs["Result"], corner.inputs["Factor"])
+corner.inputs[6].default_value = (1, 1, 1, 1); gt.links.new(sramp.outputs["Color"], corner.inputs[7])
+final = gt.nodes.new("ShaderNodeMix"); final.data_type = "RGBA"; final.blend_type = "MULTIPLY"; final.inputs["Factor"].default_value = 1.0
+gt.links.new(mul.outputs[2], final.inputs[6]); gt.links.new(corner.outputs[2], final.inputs[7])
+emit = gt.nodes.new("ShaderNodeEmission"); gt.links.new(final.outputs[2], emit.inputs["Color"]); gt.links.new(emit.outputs["Emission"], outn.inputs["Surface"])
 img_grime = bpy.data.images.new("charminar_grime", TEX, TEX, alpha=False)
 gtex = gt.nodes.new("ShaderNodeTexImage"); gtex.image = img_grime; gt.nodes.active = gtex
 obj.data.materials[0] = noise_mat
 scene.cycles.samples = 4
-bpy.ops.object.bake(type="EMIT", margin=4)
+bpy.ops.object.bake(type="EMIT", margin=2)
 obj.data.materials[0] = mat
 
 img_final = bpy.data.images.new("charminar_weathering", TEX, TEX, alpha=False)
 ao = list(img_ao.pixels); gr = list(img_grime.pixels)
 out = [0.0] * len(ao)
 for i in range(0, len(ao), 4):
-    k = (0.08 + 0.92 * ao[i] ** 1.4) * gr[i]  # deep, near-black crevices + dark grime patches
+    # Used as a lightmap (multiplies all light): keep clean stone near full brightness, crevices/grime/minaret
+    # streaks dark. Remap so the median stone is ~0.85 instead of ~0.3.
+    raw = (0.08 + 0.92 * ao[i] ** 1.4) * gr[i]
+    k = 0.18 + 0.82 * min(1.0, raw * 1.9) ** 0.8
     out[i] = out[i + 1] = out[i + 2] = k
     out[i + 3] = 1.0
 img_final.pixels = out

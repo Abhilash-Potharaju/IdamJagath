@@ -46,6 +46,10 @@ export async function place(scene: Scene, file: string, pos: Vector3, yaw = 0, o
   for (const m of meshes) {
     m.checkCollisions = false;
     m.isPickable = true;
+    // Many exported models come in as ALPHABLEND even though they're opaque, which breaks depth sorting and shadows
+    // (the entrance auto looked smeared and dark). Use alpha-test instead: still keeps leaf/cut-out transparency.
+    const pm = m.material as { transparencyMode?: number | null; alpha?: number; alphaCutOff?: number } | null;
+    if (pm && pm.transparencyMode === 2 && (pm.alpha ?? 1) >= 0.99) { pm.transparencyMode = 1; pm.alphaCutOff = 0.4; }
     const mat = m.material as { maxSimultaneousLights?: number } | null;
     if (mat && "maxSimultaneousLights" in mat) mat.maxSimultaneousLights = 8;
   }

@@ -1,4 +1,4 @@
-import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
+import { Color3, PBRMaterial, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
 import { markWorld } from "./types";
 import { makeSolid, place } from "./Props";
 import { BEAUTY, charminarMaterial } from "./Beauty";
@@ -76,7 +76,21 @@ export class Level {
     });
 
     // Wrecked rickshaw in the lane; two parked rickshaws as plaza cover
-    jobs.push(place(s, "rickshaw_wrecked.glb", new Vector3(0, 0, 33.75), Math.PI / 2).then(() => hide(this.cart)));
+    // Burning auto mid-lane: the real auto model, charred and tipped (the old blocky scripted wreck looked primitive)
+    jobs.push(place(s, "props/autorickshaw.glb", new Vector3(0.1, 0, 33.75), Math.PI / 2 + 0.25).then((p) => {
+      hide(this.cart);
+      p.root.rotation.z = 0.1; // slumped on a burst tyre
+      for (const m of p.meshes) {
+        const src = m.material as PBRMaterial | null;
+        if (!src) continue;
+        const burnt = src.clone("auto-burnt") as PBRMaterial;
+        burnt.albedoColor = new Color3(0.16, 0.12, 0.1); // soot over the paint (texture still shows panel detail)
+        burnt.roughness = 0.97;
+        burnt.metallic = 0;
+        burnt.emissiveColor = new Color3(0.12, 0.03, 0); // faint ember glow from the heat
+        m.material = burnt;
+      }
+    }));
     jobs.push(place(s, "rickshaw.glb", new Vector3(-14, 0, 68), Math.PI / 2).then(() => hide(this.rickshawBoxes[0])));
     jobs.push(place(s, "rickshaw.glb", new Vector3(15, 0, 90), -Math.PI / 2.4).then(() => hide(this.rickshawBoxes[1])));
     jobs.push(place(s, "rickshaw.glb", new Vector3(6.5, 0, -11), 0.4)); // abandoned at the start yard (decor)

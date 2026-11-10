@@ -147,10 +147,10 @@ export function charminarMaterial(scene: Scene): PBRMaterial {
   // Baked weathering (contact shadows + soft grime) gives depth to arches, balconies and recesses
   const weather = new Texture(`${BASE}textures/charminar/charminar_weathering_2k.jpg`, scene, false, false);
   weather.coordinatesIndex = 0;
-  m.ambientTexture = weather;
-  m.ambientTextureStrength = 0.95;
-  m.useAmbientInGrayScale = true;
-  m.ambientTextureImpactOnAnalyticalLights = 0.85;
+  // As a shadow-map lightmap it multiplies ALL lighting (moon, red beams, fires, sky), so grime, rain streaks down
+  // the minarets and dark crevices stay visible. (As an AO/ambient texture it was washed out by the direct light.)
+  m.lightmapTexture = weather;
+  m.useLightmapAsShadowmap = true;
   return m;
 }
 
