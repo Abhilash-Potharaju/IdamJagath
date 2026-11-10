@@ -1,0 +1,39 @@
+{
+  "$doc": "Level 1 mission: Charminar sector. Positions are [x, z] in metres on the ground plane (y = 0), +Z = north. Level anchor points (pylon spots, cage trigger, extraction, health spots, secret, plaza entry) come from the level data, not from here.",
+  "id": "level1-charminar",
+  "pylon": { "hp": 160 },
+  "secretWall": { "hp": 60, "message": "A crumbling wall… something glints inside." },
+  "pickups": {
+    "health": { "amount": 25, "radius": 1.1, "message": "+25 health" },
+    "secret": { "amount": 100, "cap": 200, "message": "SECRET FOUND · Ancestor's Blessing: +100 overcharge" }
+  },
+  "initialSpawns": [
+    { "type": "crawler", "at": [0, 25] }, { "type": "crawler", "at": [2, 36] }, { "type": "crawler", "at": [-2, 50] },
+    { "type": "spitter", "at": [0, 56] },
+    { "type": "spitter", "at": [-31, 36] }, { "type": "crawler", "at": [-28, 22] }, { "type": "crawler", "at": [-33, 26] },
+    { "type": "spitter", "at": [20, 96] }, { "type": "spitter", "at": [-20, 72] }, { "type": "crawler", "at": [10, 68] }, { "type": "crawler", "at": [-12, 90] }
+  ],
+  "ambush": {
+    "message": "AMBUSH!", "alarmSeconds": 2.5, "wakeEnemiesNorthOfZ": 60,
+    "spawns": [
+      { "type": "warden", "at": [0, 73] },
+      { "type": "crawler", "at": [-22, 108] }, { "type": "crawler", "at": [22, 108] }, { "type": "crawler", "at": [-22, 64] }
+    ]
+  },
+  "escapeWave": {
+    "message": "Captives freed and beamed to the shelter! Get back to extraction.",
+    "spawns": [
+      { "type": "crawler", "at": [0, 18] }, { "type": "crawler", "at": [2, 30] }, { "type": "crawler", "at": [-2, 44] }, { "type": "crawler", "at": [0, 52] },
+      { "type": "spitter", "at": [-18, 29] }, { "type": "spitter", "at": [0, 6] }
+    ]
+  },
+  "messages": {
+    "pylonDestroyed": "Pylon destroyed · {left} left",
+    "allPylonsDown": "All pylons down — the cage is open!"
+  },
+  "objectives": {
+    "pylons": "▸ Destroy the conversion pylons ({done}/{total}) — follow the ◆ marker or the purple beams",
+    "cage": "▸ The cage is open! Walk INTO the cage north of the Charminar to free the captives (◆)",
+    "escape": "▸ Run back to the extraction pad at the start — follow the ◆ marker / green beam"
+  }
+}

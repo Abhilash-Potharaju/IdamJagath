@@ -7,6 +7,7 @@ import { getDamageable } from "./types";
 import { Fx, flashTexture } from "./fx";
 import type { SoundName } from "./Audio";
 import { place } from "./Props";
+import { GAMEPLAY } from "../data/gameplay";
 
 /** Tunable numbers for one weapon. */
 export interface WeaponSpec {
@@ -49,15 +50,9 @@ function glowPart(scene: Scene, hex: string): StandardMaterial {
   return m;
 }
 
-/** 1 · VAJRA pulse rifle: automatic, accurate, all-rounder. */
-export const VAJRA: WeaponSpec = {
-  model: "ar_h470.glb", // "AR-H470" by Frostoise, CC BY 4.0
-  muzzle: 0.44, kickBack: 0.9, kickClimb: 3.2,
-  name: "VAJRA",
-  mag: 30, fireInterval: 0.11, reloadTime: 1.3, damage: 20, pellets: 1, spread: 0.012, range: 150, kick: 0.006,
-  flash: "#ffbf6b",
-  sound: "vajra_fire",
-  build(scene) {
+/** Built-in fallback meshes, referenced by `proceduralMesh` in data/gameplay/weapons.json. */
+const PROCEDURAL_MESHES: Record<string, (scene: Scene) => Mesh> = {
+  vajra(scene: Scene): Mesh {
     const body = MeshBuilder.CreateBox("vajra", { width: 0.12, height: 0.14, depth: 0.7 }, scene);
     body.material = metal(scene);
     const barrel = MeshBuilder.CreateCylinder("barrel", { diameter: 0.06, height: 0.4, tessellation: 8 }, scene);
@@ -66,17 +61,7 @@ export const VAJRA: WeaponSpec = {
     core.material = glowPart(scene, "#6e3810"); core.position.y = 0.08; core.parent = body;
     return body;
   },
-};
-
-/** 2 · TRISHUL scatter cannon: slow, 9 pellets, devastating up close (great vs Crawlers and a stunned Warden). */
-export const TRISHUL: WeaponSpec = {
-  model: "rl0n_25.glb", // "RL0N-25" by Frostoise, CC BY 4.0
-  muzzle: 0.5, kickBack: 2.4, kickClimb: 9,
-  name: "TRISHUL",
-  mag: 6, fireInterval: 0.75, reloadTime: 1.8, damage: 11, pellets: 9, spread: 0.09, range: 45, kick: 0.035,
-  flash: "#6bfff0",
-  sound: "trishul_fire",
-  build(scene) {
+  trishul(scene: Scene): Mesh {
     const body = MeshBuilder.CreateBox("trishul", { width: 0.2, height: 0.17, depth: 0.6 }, scene);
     body.material = metal(scene);
     for (const x of [-0.05, 0.05]) {
@@ -93,6 +78,19 @@ export const TRISHUL: WeaponSpec = {
     return body;
   },
 };
+
+/** Weapon specs from data/gameplay/weapons.json (1 · VAJRA rifle, 2 · TRISHUL scatter cannon). */
+const SPECS: WeaponSpec[] = GAMEPLAY.weapons.map((w) => {
+  const build = PROCEDURAL_MESHES[w.proceduralMesh];
+  if (!build) throw new Error(`[weapons.json] unknown proceduralMesh "${w.proceduralMesh}"`);
+  return {
+    name: w.name, mag: w.mag, fireInterval: w.fireInterval, reloadTime: w.reloadTime, damage: w.damage,
+    pellets: w.pellets, spread: w.spread, range: w.range, kick: w.kick, flash: w.flashColor,
+    sound: w.sound as SoundName, build, model: w.model, muzzle: w.muzzle, kickBack: w.kickBack, kickClimb: w.kickClimb,
+  };
+});
+export const VAJRA: WeaponSpec = SPECS[0];
+export const TRISHUL: WeaponSpec = SPECS[1];
 
 const BASE_X = 0.2, BASE_Y = -0.17, BASE_Z = 0.45;
 
@@ -201,7 +199,7 @@ export class Arsenal {
     flashMat.specularColor = Color3.Black();
     flashMat.emissiveTexture!.level = 0.65;
     flashMat.backFaceCulling = false;
-    this.guns = [VAJRA, TRISHUL].map((s) => new Gun(scene, s, player.camera, flashMat));
+    this.guns = SPECS.map((s) => new Gun(scene, s, player.camera, flashMat));
     this.guns[0].mesh.setEnabled(true);
 
     this.flash = new PointLight("muzzle", Vector3.Zero(), scene);

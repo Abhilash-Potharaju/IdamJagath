@@ -1,0 +1,958 @@
+{
+ "$schema": "Idam Jagath asset manifest v1",
+ "note": "Every asset the game loads, with provenance. Paths are relative to public/. Audio: see public/audio/manifest.json (Phase 1A). Third-party sources: art/CREDITS.md, art/library/*/manifest.json.",
+ "audio_manifest": "public/audio/manifest.json",
+ "assets": {
+  "hdri/cobblestone_street_night_2k.hdr": {
+   "type": "hdri",
+   "source": "https://polyhaven.com/a/cobblestone_street_night",
+   "author": "Greg Zaal, Jenelle van Heerden",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/bazaar_stall.glb": {
+   "type": "model",
+   "source": "tools/blender/bazaar_stall.py",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/charminar.glb": {
+   "type": "model",
+   "source": "tools/blender/charminar.py (comparison model, ?oldcharminar)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/charminar_skfb.glb": {
+   "type": "model",
+   "source": "https://skfb.ly/YqOB",
+   "author": "Dolores",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Charminar, Hyderabad",
+   "credit_order": 0,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/debris.glb": {
+   "type": "model",
+   "source": "tools/blender/debris.py",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/facades.glb": {
+   "type": "model",
+   "source": "tools/blender/facades.py",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/monsters/alien_quadruped.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/alien-monster-1a28f8bd9b544b52b633591ee8b8d987",
+   "author": "victory_",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "alien monster",
+   "credit_order": 9,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/monsters/spiderthing.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/spiderthing-take-3-10bb4cf49d304d64afd2b829666f6caf",
+   "author": "Rasmus82",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Spiderthing take 3",
+   "credit_order": 8,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/mothership.glb": {
+   "type": "model",
+   "source": "tools/blender/mothership.py",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/props/aircon.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/exterior_aircon_unit",
+   "author": "Monsta3D",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/autorickshaw.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/autorikshaw-indian-tuk-tuk-5775d012693741008acff9dad410e92d",
+   "author": "bhagathartworks",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Autorikshaw - Indian Tuk Tuk",
+   "credit_order": 3,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/barrel.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/barrel_03",
+   "author": "Serhii Khromov",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/bhelpuri_cart.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/bhelpuri-shop-by-ajay-indian-local-shop-b8449c559da9434fbcdfcfcc92a5a082",
+   "author": "AJAY",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Bhelpuri Shop",
+   "credit_order": 6,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/brass_pot_01.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/brass_pot_01",
+   "author": "Rico Cilliers",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/brass_pot_02.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/brass_pot_02",
+   "author": "Rico Cilliers",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/brass_vase_01.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/brass_vase_01",
+   "author": "Rico Cilliers",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/car_burned_pair.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/burned-out-cars-701066df6b914fd08318524c7ccd96a7",
+   "author": "kryik1023",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Burned-out Cars",
+   "credit_order": 10,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/car_crashed.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/crashed-abandoned-car-game-ready-66ef51a84c9843dda53bf0b4b9020011",
+   "author": "rashad-brahimli",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Crashed Abandoned Car - Game Ready",
+   "credit_order": 11,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/car_sedan_abandoned.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/abandoned-generic-sedan-1-game-ready-6a2169dafc254f399387a679305bb1bf",
+   "author": "rashad-brahimli",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Abandoned Generic Sedan 1 - Game Ready",
+   "credit_order": 12,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/cardboard_box.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/cardboard_box_01",
+   "author": "Rahul Chaudhary",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/concrete_chunks.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/set-of-4-concrete-rubble-chunks-0d654a6e33624665ad20c5191f5d9d95",
+   "author": "matousekfoto",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Set of 4 Concrete rubble chunks",
+   "credit_order": 15,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/concrete_debris.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/broken-concrete-debris-low-poly-284ab0cef4fd4e0dbc963da2e52341b0",
+   "author": "kemsui",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Broken concrete debris - low poly",
+   "credit_order": 14,
+   "in_game": false,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/cycle_rickshaw.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/indian-ricksha-fd3eb0c9390c486ebaa4d9dc231c9c29",
+   "author": "anandmohan662",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Indian Ricksha",
+   "credit_order": 7,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/kirana_shopfront.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/indian-shop-dad04bbb505443129a86cebd89d77610",
+   "author": "anandmohan662",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "in_game": false,
+   "notes": "optimized but not placed (real-looking brand on signage)"
+  },
+  "models/props/manhole.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/water_manhole_cover",
+   "author": "Raunox",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/old_tyre.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/old_tyre",
+   "author": "MP",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/paan_kiosk.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/indian-street-shop-a7476a895cb841709ccbd5d9d8b96f36",
+   "author": "nayan pachori",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Indian street shop",
+   "credit_order": 4,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/plastic_crate.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/plastic_crate_01",
+   "author": "PierreB3D",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/potted_plant.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/potted_plant_01",
+   "author": "Rico Cilliers",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/rubble_pile.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/rubble-pile-photoscan-optimized-5986d1487d9443b883d67b121c2c903c",
+   "author": "GameDevNick",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Rubble Pile - Photoscan (Optimized)",
+   "credit_order": 13,
+   "in_game": false,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/thela_stall.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/thela-street-food-stall-9407e18db7404bd5855707dd12ecd149",
+   "author": "anandmohan662",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Thela street food stall",
+   "credit_order": 5,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/props/trash_can.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/metal_trash_can",
+   "author": "GurJas Studios",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/props/utility_box.glb": {
+   "type": "model",
+   "source": "https://polyhaven.com/a/utility_box_01",
+   "author": "James Ray Cock",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven; optimized by tools/blender/optimize_props.py"
+  },
+  "models/rickshaw.glb": {
+   "type": "model",
+   "source": "tools/blender/rickshaw.py (classic look)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/rickshaw_wrecked.glb": {
+   "type": "model",
+   "source": "tools/blender/rickshaw.py (unused)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": false
+  },
+  "models/saucer.glb": {
+   "type": "model",
+   "source": "tools/blender/saucer.py",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/street_props.glb": {
+   "type": "model",
+   "source": "tools/blender/street_props.py",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "models/weapons/ar_h470.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/ar-h470-4b38c160243743d681d6fdaf3bd77ddb",
+   "author": "Frostoise",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "AR-H470",
+   "credit_order": 1,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "models/weapons/rl0n_25.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/rl0n-25-c54ce41b7b854834a13ef1ed42aed6ba",
+   "author": "Frostoise",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "RL0N-25",
+   "credit_order": 2,
+   "in_game": true,
+   "notes": "modified: optimized (decimated, textures resized) for the web"
+  },
+  "textures/blue_plaster_weathered/blue_plaster_weathered_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/blue_plaster_weathered",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/blue_plaster_weathered/blue_plaster_weathered_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/blue_plaster_weathered",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/blue_plaster_weathered/blue_plaster_weathered_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/blue_plaster_weathered",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/broken_brick_wall/broken_brick_wall_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/broken_brick_wall",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/broken_brick_wall/broken_brick_wall_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/broken_brick_wall",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/broken_brick_wall/broken_brick_wall_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/broken_brick_wall",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/charminar/charminar_weathering_2k.jpg": {
+   "type": "texture",
+   "source": "tools/blender/import_charminar_skfb.py (baked from the Sketchfab Charminar)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/cobblestone_floor_08/cobblestone_floor_08_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/cobblestone_floor_08",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": false,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/cobblestone_floor_08/cobblestone_floor_08_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/cobblestone_floor_08",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": false,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/cobblestone_floor_08/cobblestone_floor_08_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/cobblestone_floor_08",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": false,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/damaged_plaster/damaged_plaster_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/damaged_plaster",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/damaged_plaster/damaged_plaster_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/damaged_plaster",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/damaged_plaster/damaged_plaster_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/damaged_plaster",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/generated/alien_banner.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/alien_billboard_base.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/alien_emblem.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/decal_pock_scorch.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/decal_puddle_mask.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/fx_beam_gradient.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/fx_beam_spot.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/fx_bullet_hole.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/fx_dot.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/fx_ichor_splat.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/fx_muzzle_flash.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/particle_smoke.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/particle_soft.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_00.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_01.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_02.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_03.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_04.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_05.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_06.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_07.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_08.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/sign_09.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_ashlar.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_asphalt.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_cobbles.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_cracked.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_facade.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_facade_lit.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_planks.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/generated/surface_plaster.png": {
+   "type": "texture",
+   "source": "tools/textures/generators.ts (run tools/textures/export.mjs)",
+   "author": "Idam Jagath project",
+   "license": "project-owned",
+   "credit_required": false,
+   "in_game": true
+  },
+  "textures/painted_plaster_wall/painted_plaster_wall_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/painted_plaster_wall",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/painted_plaster_wall/painted_plaster_wall_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/painted_plaster_wall",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/painted_plaster_wall/painted_plaster_wall_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/painted_plaster_wall",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/painted_worn_brick/painted_worn_brick_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/painted_worn_brick",
+   "author": "Dimitrios Savva",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/painted_worn_brick/painted_worn_brick_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/painted_worn_brick",
+   "author": "Dimitrios Savva",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/painted_worn_brick/painted_worn_brick_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/painted_worn_brick",
+   "author": "Dimitrios Savva",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/patterned_cobblestone/patterned_cobblestone_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/patterned_cobblestone",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/patterned_cobblestone/patterned_cobblestone_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/patterned_cobblestone",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/patterned_cobblestone/patterned_cobblestone_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/patterned_cobblestone",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/plaster_stone_wall_01/plaster_stone_wall_01_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/plaster_stone_wall_01",
+   "author": "Charlotte Baglioni",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": false,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/plaster_stone_wall_01/plaster_stone_wall_01_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/plaster_stone_wall_01",
+   "author": "Charlotte Baglioni",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": false,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/plaster_stone_wall_01/plaster_stone_wall_01_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/plaster_stone_wall_01",
+   "author": "Charlotte Baglioni",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": false,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/red_plaster_weathered/red_plaster_weathered_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/red_plaster_weathered",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/red_plaster_weathered/red_plaster_weathered_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/red_plaster_weathered",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/red_plaster_weathered/red_plaster_weathered_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/red_plaster_weathered",
+   "author": "Amal Kumar",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/rough_plaster_brick/rough_plaster_brick_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/rough_plaster_brick",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/rough_plaster_brick/rough_plaster_brick_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/rough_plaster_brick",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/rough_plaster_brick/rough_plaster_brick_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/rough_plaster_brick",
+   "author": "Rob Tuytel",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/stone_floor/stone_floor_arm_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/stone_floor",
+   "author": "Dimitrios Savva",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/stone_floor/stone_floor_diff_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/stone_floor",
+   "author": "Dimitrios Savva",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "textures/stone_floor/stone_floor_nor_gl_1k.jpg": {
+   "type": "texture",
+   "source": "https://polyhaven.com/a/stone_floor",
+   "author": "Dimitrios Savva",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "Poly Haven PBR set, resized to 1K"
+  },
+  "ui/keyart.jpg": {
+   "type": "image",
+   "source": "art/concepts/keyart/charminar-occupied-chatgpt.png (AI-generated by the project owner)",
+   "author": "project owner",
+   "license": "generator terms (check OpenAI terms before commercial use)",
+   "credit_required": false,
+   "in_game": true
+  }
+ }
+}

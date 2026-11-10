@@ -217,4 +217,13 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - Regression: burning auto and lane rubble block movement, mission → MISSION COMPLETE, no errors, build OK.
 - User: "charminar is looking very good now". Fixes from screenshots: the thin ragged "concrete_debris" slabs (read as floating sheets in the courtyard and plaza) replaced everywhere with solid rubble piles/chunks; burning auto keeps its real yellow-green paint darkened by soot (albedo 0.42, no orange emissive); fire light moved above the roof and flames confined to the cabin so the body reads. Mission regression OK.
 - Photoscan "rubble_pile" (Sketchfab) was shredded by decimation into ragged, see-through scraps: all 7 uses replaced with "concrete_chunks". Thin "concrete_debris" was already removed. No photoscan rubble remains.
+- **PORTABILITY REFACTOR, Phase 1 done** (data extraction; game looks and plays identically):
+  - Gameplay data: `data/gameplay/{weapons,enemies,player,mission}.json`, validated by `src/data/schemas.ts` (no engine imports).
+  - Level data: `data/level/level1.json` (anchors, 60 blocks, 73 props, facade runs, lights, banners, billboards, decals, puddles), loaded by `src/data/level.ts`.
+  - Generated textures → 31 PNGs in `public/textures/generated/` (generators kept in `tools/textures/`). Synthesized audio → 38 AAC files in `public/audio/` (715 KB; exporter in `tools/dev/export_audio.mjs`; `?synthaudio` = live synth).
+  - `data/assets.json`: manifest of 105 assets (path, source, author, license); start-screen credits generated from it.
+  - Lead integration: removed hard-coded lamp/fire positions and the no-op beauty call from Game.ts.
+  - Regression: meshes/holders/lights/enemies/credits as before, collisions, damage (40→20), full mission → MISSION COMPLETE, no errors, build OK.
+  - Left in code for Phase 3: fx/Fleet runtime-drawn sprites (PNG copies exist), billboard animation, some feel/animation constants, classic-look surface rules.
+  - **Next: Phase 2** (level shell rebuilt as a Blender scene) and **Phase 3** (core/engine split, fixed timestep, seeded RNG, unit tests).
 

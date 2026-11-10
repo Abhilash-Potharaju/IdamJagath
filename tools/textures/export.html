@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Texture export</title></head>
+<body>
+<!-- Dev tool: served by Vite at /tools/textures/export.html. export.mjs reads window.__textures. -->
+<script type="module">
+  import { GENERATORS } from "./generators.ts";
+  await document.fonts.ready;
+  window.__textures = GENERATORS.map((g) => {
+    const cv = document.createElement("canvas");
+    cv.width = g.w; cv.height = g.h;
+    const c = cv.getContext("2d");
+    c.clearRect(0, 0, g.w, g.h);
+    g.draw(c, g.w, g.h);
+    return { file: g.file, data: cv.toDataURL("image/png") };
+  });
+  document.body.textContent = `rendered ${window.__textures.length} textures`;
+</script>
+</body></html>

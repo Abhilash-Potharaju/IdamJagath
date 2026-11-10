@@ -1,0 +1,23 @@
+{
+  "$doc": "Player movement + camera. Units: m, s, m/s, m/s², radians. Collision capsule = ellipsoid half-extents.",
+  "maxHealth": 100,
+  "overchargeCap": 200,
+  "collisionHalfExtents": [0.4, 0.9, 0.4],
+  "gravity": -24,
+  "walkSpeed": 6.5,
+  "sprintSpeed": 10,
+  "crouchSpeed": 3.6,
+  "slideBoost": 13.5,
+  "slideTime": 0.65,
+  "jumpSpeed": 8,
+  "eyeHeight": 0.7,
+  "crouchEyeDrop": 0.55,
+  "mouseSensitivity": 0.0022,
+  "fov": 1.25,
+  "sprintFovBonus": 0.08,
+  "zoomFov": 0.55,
+  "zoomSpeed": 12,
+  "accelGround": 70,
+  "decelGround": 55,
+  "accelAir": 14
+}

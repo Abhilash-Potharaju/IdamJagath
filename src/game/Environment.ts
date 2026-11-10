@@ -1,10 +1,11 @@
 import {
-  BoundingBox, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, DynamicTexture, Effect, HemisphericLight,
+  BoundingBox, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Effect, HemisphericLight,
   ImageProcessingConfiguration, Mesh, MeshBuilder, ParticleSystem, PointLight, Scene, ShaderMaterial, StandardMaterial,
   Texture, Vector3, VertexBuffer, type Camera,
 } from "@babylonjs/core";
 import { place } from "./Props";
 import { addFleet, redMothership } from "./Fleet";
+import { LEVEL1 } from "../data/level";
 
 /**
  * Mood for Level 1, matched to the key art (art/concepts/keyart/charminar-occupied-chatgpt.png):
@@ -93,175 +94,16 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 
-// ───────────────────────── procedural textures ─────────────────────────
-function rng(seed: number): () => number {
-  return () => {
-    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-type Ctx = CanvasRenderingContext2D;
-
-function makeTex(scene: Scene, name: string, size: number, draw: (c: Ctx, s: number, r: () => number) => void, seed = 7): DynamicTexture {
-  const t = new DynamicTexture(name, { width: size, height: size }, scene, true, Texture.NEAREST_NEAREST_MIPLINEAR);
-  const c = t.getContext() as unknown as Ctx;
-  draw(c, size, rng(seed));
-  t.update(true);
+// ───────────────────────── surface textures ─────────────────────────
+// Pre-rendered PNGs (generator code: tools/textures/generators.ts → public/textures/generated/). Same pixels the
+// game used to draw at runtime; nearest-filtered with trilinear mips, tiling.
+const GEN = `${import.meta.env.BASE_URL}textures/generated/`;
+function genTex(scene: Scene, file: string, alpha = false): Texture {
+  const t = new Texture(GEN + file, scene, false, true, Texture.NEAREST_NEAREST_MIPLINEAR);
   t.wrapU = Texture.WRAP_ADDRESSMODE;
   t.wrapV = Texture.WRAP_ADDRESSMODE;
+  t.hasAlpha = alpha;
   return t;
-}
-
-/** Near-white plaster with speckle, damp blotches and grime streaks (tinted by the material colour). */
-function plaster(c: Ctx, s: number, r: () => number, base = 222): void {
-  c.fillStyle = `rgb(${base},${base},${base})`;
-  c.fillRect(0, 0, s, s);
-  for (let i = 0; i < s * s / 10; i++) {
-    const v = base - 40 + r() * 55;
-    c.fillStyle = `rgba(${v},${v},${v},0.35)`;
-    c.fillRect(r() * s, r() * s, 1 + r() * 2, 1 + r() * 2);
-  }
-  for (let i = 0; i < 18; i++) {
-    c.fillStyle = `rgba(70,55,50,${0.04 + r() * 0.06})`;
-    c.beginPath();
-    c.ellipse(r() * s, r() * s, 10 + r() * s * 0.15, 6 + r() * s * 0.1, r() * 3, 0, Math.PI * 2);
-    c.fill();
-  }
-  for (let i = 0; i < 26; i++) {
-    c.fillStyle = `rgba(55,45,40,${0.05 + r() * 0.08})`;
-    c.fillRect(r() * s, r() * s * 0.6, 1 + r() * 3, 20 + r() * s * 0.4);
-  }
-}
-
-/** 4 bays × 4 floors of old-city facade (one tile = 16 m × 14 m): windows, shutters, cornices, balconies. */
-function facade(c: Ctx, s: number, r: () => number, lit: boolean): void {
-  if (!lit) plaster(c, s, r);
-  else { c.fillStyle = "#000"; c.fillRect(0, 0, s, s); }
-  const bay = s / 4, floor = s / 4;
-  const shutterCols = ["#3d6b5a", "#5a4a8a", "#7a4a2a", "#2f5f7f", "#8a3a3a"];
-  for (let fy = 0; fy < 4; fy++) {
-    if (!lit) {
-      c.fillStyle = "rgba(90,80,72,0.55)"; // cornice at each floor line
-      c.fillRect(0, fy * floor, s, 5);
-      c.fillStyle = "rgba(255,250,240,0.25)";
-      c.fillRect(0, fy * floor + 5, s, 2);
-    }
-    for (let bx = 0; bx < 4; bx++) {
-      const x = bx * bay + bay * 0.31, y = fy * floor + floor * 0.24, w = bay * 0.38, h = floor * 0.55;
-      const roll = r();
-      if (lit) {
-        if (roll < 0.36) {
-          const g = c.createLinearGradient(x, y, x, y + h);
-          g.addColorStop(0, "#ffcf7a"); g.addColorStop(1, "#ff8a2a");
-          c.fillStyle = g;
-          c.fillRect(x + 3, y + 3, w - 6, h - 6);
-          c.fillStyle = "rgba(0,0,0,0.5)"; // window bars
-          c.fillRect(x + w / 2 - 1, y, 2, h);
-        } else if (roll < 0.40) {
-          c.fillStyle = "#2c4c9c"; // a TV's blue glow
-          c.fillRect(x + 3, y + 3, w - 6, h - 6);
-        } else if (roll < 0.42) {
-          c.fillStyle = "#7a2cb8"; // alien light inside
-          c.fillRect(x + 3, y + 3, w - 6, h - 6);
-        }
-        continue;
-      }
-      c.fillStyle = "#efe7d6"; c.fillRect(x - 4, y - 4, w + 8, h + 8); // frame
-      c.fillStyle = "#17151c"; c.fillRect(x, y, w, h); // glass
-      // arched top
-      c.beginPath(); c.fillStyle = "#17151c"; c.ellipse(x + w / 2, y, w / 2, w * 0.35, 0, Math.PI, 0); c.fill();
-      if (roll > 0.45) { // wooden shutters, open or closed
-        c.fillStyle = shutterCols[Math.floor(r() * shutterCols.length)];
-        if (r() < 0.5) c.fillRect(x, y, w, h);
-        else { c.fillRect(x - w * 0.48, y, w * 0.45, h); c.fillRect(x + w * 1.03, y, w * 0.45, h); }
-        c.fillStyle = "rgba(0,0,0,0.25)";
-        for (let k = 0; k < h; k += 6) c.fillRect(x - w * 0.48, y + k, w * 1.96, 1);
-      }
-      if (r() < 0.4) { // small balcony
-        c.fillStyle = "#6f655c"; c.fillRect(x - 10, y + h + 2, w + 20, 7);
-        c.fillStyle = "#2a2420"; for (let k = 0; k <= w + 20; k += 6) c.fillRect(x - 10 + k, y + h - 14, 2, 16);
-      }
-    }
-  }
-}
-
-function ashlar(c: Ctx, s: number, r: () => number): void { // sandstone blocks
-  plaster(c, s, r, 215);
-  const rows = 8;
-  const rh = s / rows;
-  c.fillStyle = "rgba(70,50,35,0.45)";
-  for (let y = 0; y < rows; y++) {
-    c.fillRect(0, y * rh, s, 2);
-    const off = (y % 2) * (s / 8);
-    for (let x = -1; x < 5; x++) c.fillRect(off + x * (s / 4), y * rh, 2, rh);
-    for (let x = 0; x < 4; x++) {
-      c.fillStyle = `rgba(${150 + r() * 60},${110 + r() * 40},${80 + r() * 30},0.12)`;
-      c.fillRect(off + x * (s / 4) + 2, y * rh + 2, s / 4 - 4, rh - 4);
-      c.fillStyle = "rgba(70,50,35,0.45)";
-    }
-  }
-}
-
-function cobbles(c: Ctx, s: number, r: () => number): void {
-  c.fillStyle = "#3a332e"; c.fillRect(0, 0, s, s);
-  const n = 10, cs = s / n;
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const v = 150 + r() * 70;
-      c.fillStyle = `rgb(${v},${v * 0.93},${v * 0.85})`;
-      const ox = (y % 2) * cs / 2;
-      c.fillRect(((x * cs + ox) % s) + 2, y * cs + 2, cs - 4 - r() * 3, cs - 4 - r() * 3);
-    }
-  }
-  for (let i = 0; i < 40; i++) { c.fillStyle = "rgba(20,15,12,0.25)"; c.fillRect(r() * s, r() * s, 2 + r() * 10, 2 + r() * 10); }
-}
-
-function asphalt(c: Ctx, s: number, r: () => number): void {
-  plaster(c, s, r, 200);
-  c.strokeStyle = "rgba(25,20,18,0.5)";
-  for (let i = 0; i < 9; i++) { // cracks
-    c.beginPath();
-    let x = r() * s, y = r() * s;
-    c.moveTo(x, y);
-    for (let k = 0; k < 8; k++) { x += (r() - 0.5) * 40; y += (r() - 0.5) * 40; c.lineTo(x, y); }
-    c.lineWidth = 1 + r();
-    c.stroke();
-  }
-  for (let i = 0; i < 12; i++) { // oil stains / puddles
-    c.fillStyle = `rgba(30,25,35,${0.1 + r() * 0.15})`;
-    c.beginPath(); c.ellipse(r() * s, r() * s, 8 + r() * 30, 5 + r() * 18, r() * 3, 0, Math.PI * 2); c.fill();
-  }
-}
-
-function planks(c: Ctx, s: number, r: () => number): void {
-  plaster(c, s, r, 210);
-  const n = 6, ph = s / n;
-  for (let i = 0; i < n; i++) {
-    c.fillStyle = `rgba(60,35,20,${0.1 + r() * 0.15})`;
-    c.fillRect(0, i * ph, s, ph);
-    c.fillStyle = "rgba(30,18,10,0.7)";
-    c.fillRect(0, i * ph, s, 2);
-  }
-  c.fillStyle = "rgba(30,18,10,0.6)";
-  c.fillRect(0, 0, 6, s); c.fillRect(s - 6, 0, 6, s);
-}
-
-function cracked(c: Ctx, s: number, r: () => number): void {
-  plaster(c, s, r);
-  c.strokeStyle = "rgba(20,15,15,0.85)";
-  for (let i = 0; i < 6; i++) {
-    c.beginPath();
-    let x = s * 0.5 + (r() - 0.5) * s * 0.3, y = s * 0.5 + (r() - 0.5) * s * 0.3;
-    c.moveTo(x, y);
-    for (let k = 0; k < 10; k++) { x += (r() - 0.5) * 45; y += (r() - 0.5) * 45; c.lineTo(x, y); }
-    c.lineWidth = 2 + r() * 2;
-    c.stroke();
-  }
-  c.fillStyle = "rgba(20,15,15,0.35)";
-  c.beginPath(); c.ellipse(s / 2, s / 2, s * 0.18, s * 0.14, 0.3, 0, Math.PI * 2); c.fill();
 }
 
 /**
@@ -299,27 +141,19 @@ function pastelFor(name: string): string {
 /** Materials for the level's blocks, chosen from the block's name. */
 export class Surfaces {
   private scene: Scene;
-  private tex = new Map<string, DynamicTexture>();
+  private tex = new Map<string, Texture>();
   private mats = new Map<string, StandardMaterial>();
 
   constructor(scene: Scene) {
     this.scene = scene;
   }
 
-  private t(kind: string): DynamicTexture {
+  private t(kind: string): Texture {
     let t = this.tex.get(kind);
     if (!t) {
-      const s = this.scene;
-      switch (kind) {
-        case "facade": t = makeTex(s, "facade", 512, (c, n, r) => facade(c, n, r, false), 11); break;
-        case "facadeLit": t = makeTex(s, "facadeLit", 512, (c, n, r) => facade(c, n, r, true), 11); break;
-        case "ashlar": t = makeTex(s, "ashlar", 256, ashlar, 3); break;
-        case "cobbles": t = makeTex(s, "cobbles", 256, cobbles, 5); break;
-        case "asphalt": t = makeTex(s, "asphalt", 256, asphalt, 9); break;
-        case "planks": t = makeTex(s, "planks", 128, planks, 13); break;
-        case "cracked": t = makeTex(s, "cracked", 256, cracked, 17); break;
-        default: t = makeTex(s, "plaster", 256, (c, n, r) => plaster(c, n, r), 21);
-      }
+      const file = { facade: "surface_facade", facadeLit: "surface_facade_lit", ashlar: "surface_ashlar", cobbles: "surface_cobbles",
+        asphalt: "surface_asphalt", planks: "surface_planks", cracked: "surface_cracked" }[kind] ?? "surface_plaster";
+      t = genTex(this.scene, `${file}.png`);
       this.tex.set(kind, t);
     }
     return t;
@@ -382,7 +216,7 @@ export class Environment {
   private sky: Mesh;
   private skyMat: ShaderMaterial;
   private time = 0;
-  private particleTex: DynamicTexture;
+  private particleTex: Texture;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -419,12 +253,7 @@ export class Environment {
     this.sky.isPickable = false;
     this.sky.applyFog = false;
 
-    this.particleTex = makeTex(scene, "particle", 64, (c, s) => {
-      const g = c.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-      g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
-      c.clearRect(0, 0, s, s); c.fillStyle = g; c.fillRect(0, 0, s, s);
-    });
-    this.particleTex.hasAlpha = true;
+    this.particleTex = genTex(scene, "particle_soft.png", true);
 
     // Lightning: a double flicker every 8–20 s brightens the clouds and briefly lifts the sky light
     let nextFlash = 6 + Math.random() * 8, flashT = -1;
@@ -484,7 +313,7 @@ export class Environment {
   }
 
   /** Warm sodium lamps on the lane's lamp posts (lamp heads overhang the lane by ~1 m). */
-  addLamps(spots: [number, number][]): void {
+  addLamps(spots: [number, number][] = LEVEL1.lights.lamps): void {
     for (const [x, z] of spots) {
       const l = new PointLight("lamp", new Vector3(x < 0 ? x + 1 : x - 1, 4.8, z), this.scene);
       l.diffuse = Color3.FromHexString("#ffad55");
@@ -495,7 +324,7 @@ export class Environment {
   }
 
   /** A burning wreck: flickering firelight, flames, smoke, embers. */
-  addFire(at: Vector3): void {
+  addFire(at: Vector3 = new Vector3(...LEVEL1.lights.fires[0])): void {
     const s = this.scene;
     const light = new PointLight("fire", at.add(new Vector3(0, 2.9, 0)), s); // above the roof: lights the street, not just the wreck
     light.diffuse = Color3.FromHexString("#ff7a2a");
@@ -608,7 +437,7 @@ export class Environment {
 
   /** 6 tall dark smoke plumes behind the buildings, lit orange at their base by unseen fires. */
   private addSkylineSmoke(): void {
-    const spots: [number, number][] = [[-38, 18], [36, 30], [-42, 96], [44, 84], [12, 138], [-20, -34]];
+    const spots = LEVEL1.skylineSmoke; // level data: plumes behind the rooftops
     for (const [x, z] of spots) {
       const smoke = new ParticleSystem("fx-plume", 70, this.scene);
       smoke.particleTexture = this.particleTex;

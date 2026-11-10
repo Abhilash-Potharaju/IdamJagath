@@ -1,0 +1,35 @@
+{
+  "$doc": "Enemy tuning. Units: m, s, m/s, damage points. 'knockback' = horizontal push impulse (m/s). weakSpots = damage multipliers per body part. 'model' skins the AI with an animated glb from public/models/monsters/ (length = metres along the model's own 'axis'; yaw = radians to face +Z).",
+  "crawler": {
+    "hp": 40, "halfHeight": 0.45, "radius": 0.5, "sightRange": 26,
+    "chaseSpeed": 5.2, "zigzagWeight": 0.6, "zigzagRate": 4,
+    "bite": { "range": 1.6, "damage": 8, "knockback": 4, "cooldown": 0.9 },
+    "lunge": {
+      "minRange": 2.5, "maxRange": 7.5, "initialCooldown": 1, "cooldown": 2.2,
+      "windup": 0.45, "duration": 0.35, "speed": 19, "hitRange": 1.4, "damage": 18, "knockback": 10, "recover": 0.7
+    },
+    "weakSpots": { "eye": 1.5 },
+    "model": { "file": "spiderthing.glb", "length": 1.4, "axis": "z", "yaw": 0, "anim": "ArmatureAction", "animSpeedRef": 3.5 }
+  },
+  "spitter": {
+    "hp": 60, "halfHeight": 1.1, "radius": 0.4, "sightRange": 34,
+    "moveSpeed": 3.2, "minRange": 10, "maxRange": 20, "strafeWeight": 0.6,
+    "fire": { "initialCooldown": 1.5, "cooldown": 2.4, "windup": 0.6 },
+    "glob": { "speed": 15, "damage": 14, "lifetime": 5, "hitRadiusEye": 0.9, "hitRadiusBody": 0.8 },
+    "weakSpots": { "sac": 2 },
+    "model": { "file": "alien_quadruped.glb", "length": 4.4, "axis": "x", "yaw": -1.5707963267948966, "anim": "ArmatureAction", "animSpeedRef": 2.2, "keep": ["sac"] }
+  },
+  "warden": {
+    "hp": 340, "halfHeight": 1.5, "radius": 1.1, "sightRange": 60,
+    "dropHeight": 22, "dropSpeed": 25,
+    "land": { "radius": 5, "damage": 15, "knockback": 12 },
+    "stalkSpeed": 2.6, "turnRate": 1.6,
+    "contact": { "range": 2.6, "damagePerSecond": 40, "knockback": 6 },
+    "charge": {
+      "initialCooldown": 3, "minRange": 5, "maxRange": 35, "windup": 1.1, "duration": 2.2, "speed": 21,
+      "hitRange": 2.4, "damage": 35, "knockback": 18, "wallStopFraction": 0.35,
+      "recover": 1, "cooldownAfterRecover": 3.5, "cooldownAfterStun": 2.5
+    },
+    "stun": { "duration": 3.5, "damageMultiplier": 2 }
+  }
+}

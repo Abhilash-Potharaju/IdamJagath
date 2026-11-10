@@ -12,8 +12,13 @@ import { isWorld, setDamageable } from "./types";
 import { burst } from "./fx";
 import { place } from "./Props";
 import { dressLevel } from "./Dressing";
-import { applyBeautyMaterials, placeBeautyProps } from "./Beauty";
+import { applyBeautyMaterials } from "./Beauty";
 import { Audio, type SoundName } from "./Audio";
+import { GAMEPLAY } from "../data/gameplay";
+import { fmt, type Spawn } from "../data/schemas";
+
+const MISSION = GAMEPLAY.mission;
+const GLOB = GAMEPLAY.enemies.spitter.glob;
 import { Environment, HEMI_COLOR } from "./Environment";
 import { applyResolution, graphicsSettings, setupGraphics, type GraphicsHandles, fpsCounter } from "./Graphics";
 
@@ -45,7 +50,8 @@ export class Game implements GameCtx {
   enemies: Enemy[] = [];
   private globs: Glob[] = [];
   private pickups: Pickup[] = [];
-  private pylonsLeft = 3;
+  private pylonsLeft = 0; // set from level.pylonSpots.length when the pylons are built
+  private pylonTotal = 0;
   private phase: Phase = "pylons";
   private running = false;
   private time = 0;
@@ -91,7 +97,6 @@ export class Game implements GameCtx {
     const dressed = dressLevel(this.scene, this.level); // building fronts, shop signs, debris
     this.modelJobs.push(decorated, dressed);
     // Real street props replace some scripted ones, so they go in after the scripted set-dressing has loaded
-    this.modelJobs.push(Promise.allSettled([decorated, dressed]).then(() => placeBeautyProps(this.scene, this.level)));
     this.player = new Player(this.scene, this.level.playerSpawn);
     this.weapon = new Arsenal(this.scene, this.player, this.hud, (n) => this.sound(n));
     // Keep the first-person gun out of the glow layer (it bloomed into a white bar)
@@ -100,8 +105,8 @@ export class Game implements GameCtx {
     // Modern rendering: AA, cascaded moon shadows, SSAO, SSR, adaptive resolution, quality presets
     this.gfx = setupGraphics(this.engine, this.scene, this.player.camera, this.env.moon, post);
     fpsCounter(this.engine);
-    this.env.addLamps([[-3.7, 17], [3.7, 26], [-3.7, 45], [3.7, 57]]);
-    this.env.addFire(new Vector3(0, 0, 33.75)); // the wrecked rickshaw burns
+    this.env.addLamps(); // positions from data/level/level1.json
+    this.env.addFire(); // the wrecked rickshaw burns (data/level/level1.json)
     this.env.addAmbientParticles();
     this.modelJobs.push(this.env.addMothership());
     this.modelJobs.push(this.env.addFleet()); // key-art saucer fleet + red beams + skyline smoke
@@ -166,6 +171,7 @@ export class Game implements GameCtx {
   // ───────────────────────── setup ─────────────────────────
 
   private buildPylons(): void {
+    this.pylonTotal = this.pylonsLeft = this.level.pylonSpots.length;
     for (const p of this.level.pylonSpots) {
       const mat = new StandardMaterial("pylon", this.scene);
       mat.emissiveColor = Color3.FromHexString("#ff1e1e");
@@ -185,7 +191,7 @@ export class Game implements GameCtx {
       light.intensity = 1.2;
       light.range = 16;
 
-      let hp = 160;
+      let hp = MISSION.pylon.hp;
       let t = Math.random() * 6;
       const obs = this.scene.onBeforeRenderObservable.add(() => {
         t += this.engine.getDeltaTime() / 1000;
@@ -245,7 +251,7 @@ export class Game implements GameCtx {
 
   private buildSecretWall(): void {
     const wall = this.level.secretWall;
-    let hp = 60;
+    let hp = MISSION.secretWall.hp;
     setDamageable(wall, {
       takeDamage: (a, at) => {
         if (hp <= 0) return;
@@ -254,7 +260,7 @@ export class Game implements GameCtx {
         if (hp <= 0) {
           burst(this.scene, wall.position.clone(), "#c8b8d8", 3, 0.4);
           wall.dispose();
-          this.hud.message("A crumbling wall… something glints inside.", 3);
+          this.hud.message(MISSION.secretWall.message, 3);
         }
       },
     });
@@ -293,14 +299,16 @@ export class Game implements GameCtx {
   }
 
   private spawnInitialEnemies(): void {
-    const C = (x: number, z: number) => this.enemies.push(new Crawler(this, new Vector3(x, 0, z)));
-    const S = (x: number, z: number) => this.enemies.push(new Spitter(this, new Vector3(x, 0, z)));
-    // Lane
-    C(0, 25); C(2, 36); C(-2, 50); S(0, 56);
-    // West courtyard
-    S(-31, 36); C(-28, 22); C(-33, 26);
-    // Plaza
-    S(20, 96); S(-20, 72); C(10, 68); C(-12, 90);
+    for (const sp of MISSION.initialSpawns) this.spawnEnemy(sp);
+  }
+
+  /** Create an enemy from mission data ({ type, at: [x, z] }). */
+  private spawnEnemy(sp: Spawn, awake = false): Enemy {
+    const at = new Vector3(sp.at[0], 0, sp.at[1]);
+    const e = sp.type === "crawler" ? new Crawler(this, at) : sp.type === "spitter" ? new Spitter(this, at) : new Warden(this, at);
+    if (awake) e.awake = true;
+    this.enemies.push(e);
+    return e;
   }
 
   // ───────────────────────── GameCtx ─────────────────────────
@@ -320,7 +328,7 @@ export class Game implements GameCtx {
     m.material = mat;
     m.isPickable = false;
     m.position.copyFrom(from);
-    this.globs.push({ mesh: m, vel: dir.scale(15), life: 5 });
+    this.globs.push({ mesh: m, vel: dir.scale(GLOB.speed), life: GLOB.lifetime });
   }
 
   onEnemyKilled(e: Enemy): void {
@@ -403,8 +411,8 @@ export class Game implements GameCtx {
       const step = g.vel.scale(dt);
       const blocked = !this.los(g.mesh.position, g.mesh.position.add(step));
       g.mesh.position.addInPlace(step);
-      if (Vector3.Distance(g.mesh.position, eye) < 0.9 || Vector3.Distance(g.mesh.position, this.player.body.position) < 0.8) {
-        this.player.hurt(14);
+      if (Vector3.Distance(g.mesh.position, eye) < GLOB.hitRadiusEye || Vector3.Distance(g.mesh.position, this.player.body.position) < GLOB.hitRadiusBody) {
+        this.player.hurt(GLOB.damage);
         this.hud.damageFlash();
         burst(this.scene, g.mesh.position.clone(), "#7dff3a", 0.8, 0.2);
         g.mesh.dispose(false, true);
@@ -426,17 +434,17 @@ export class Game implements GameCtx {
       if (k.taken) continue;
       k.mesh.rotation.y += dt * 2;
       k.mesh.position.y = 0.8 + Math.sin(this.time * 3) * 0.1;
-      if (Math.hypot(p.x - k.mesh.position.x, p.z - k.mesh.position.z) > 1.1) continue;
+      if (Math.hypot(p.x - k.mesh.position.x, p.z - k.mesh.position.z) > MISSION.pickups.health.radius) continue;
       if (k.kind === "health") {
         if (this.player.health >= this.player.maxHealth) continue;
-        this.player.heal(25);
+        this.player.heal(MISSION.pickups.health.amount);
         this.sound("pickup");
-        this.hud.message("+25 health", 1.2);
+        this.hud.message(MISSION.pickups.health.message, 1.2);
       } else {
         this.secrets++;
         this.sound("secret");
-        this.player.heal(100, 200);
-        this.hud.message("SECRET FOUND · Ancestor's Blessing: +100 overcharge", 3.5);
+        this.player.heal(MISSION.pickups.secret.amount, MISSION.pickups.secret.cap);
+        this.hud.message(MISSION.pickups.secret.message, 3.5);
       }
       k.taken = true;
       // Don't dispose materials: all health packs share one material
@@ -455,12 +463,11 @@ export class Game implements GameCtx {
     // Surprise encounter: the Warden drops from the Charminar when you enter the plaza
     if (!this.ambushDone && !this.explore && !this.zoo && p.z > this.level.plazaEntryZ) {
       this.ambushDone = true;
-      this.alarmT = 2.5;
+      this.alarmT = MISSION.ambush.alarmSeconds;
       this.sound("alarm");
-      this.hud.message("AMBUSH!", 2);
-      this.enemies.push(new Warden(this, new Vector3(0, 0, 73)));
-      for (const [x, z] of [[-22, 108], [22, 108], [-22, 64]]) this.enemies.push(new Crawler(this, new Vector3(x, 0, z)));
-      for (const e of this.enemies) if (e.pos.z > 60) e.awake = true;
+      this.hud.message(MISSION.ambush.message, 2);
+      for (const sp of MISSION.ambush.spawns) this.spawnEnemy(sp);
+      for (const e of this.enemies) if (e.pos.z > MISSION.ambush.wakeEnemiesNorthOfZ) e.awake = true;
     }
 
     if (this.phase === "cage" && this.inRect(this.level.cageTrigger)) {
@@ -470,14 +477,9 @@ export class Game implements GameCtx {
       this.sound("captives_freed");
       this.beacon.setEnabled(true);
       this.extractionPad.visibility = 1;
-      this.hud.message("Captives freed and beamed to the shelter! Get back to extraction.", 3.5);
+      this.hud.message(MISSION.escapeWave.message, 3.5);
       // Escape wave in the lane
-      if (!this.explore) for (const [x, z] of [[0, 18], [2, 30], [-2, 44], [0, 52]]) {
-        const c = new Crawler(this, new Vector3(x, 0, z)); c.awake = true; this.enemies.push(c);
-      }
-      if (!this.explore) for (const [x, z] of [[-18, 29], [0, 6]]) {
-        const s = new Spitter(this, new Vector3(x, 0, z)); s.awake = true; this.enemies.push(s);
-      }
+      if (!this.explore) for (const sp of MISSION.escapeWave.spawns) this.spawnEnemy(sp, true);
       this.updateObjective();
     }
 
@@ -500,14 +502,14 @@ export class Game implements GameCtx {
   private pylonDestroyed(): void {
     this.pylonsLeft--;
     if (this.pylonsLeft > 0) {
-      this.hud.message(`Pylon destroyed · ${this.pylonsLeft} left`, 2);
+      this.hud.message(fmt(MISSION.messages.pylonDestroyed, { left: this.pylonsLeft }), 2);
     } else {
       this.phase = "cage";
       const door = this.level.cageDoor;
       burst(this.scene, door.position.clone(), "#ff2a1a", 2.5, 0.4);
       this.sound("cage_open", door.position.clone());
       door.dispose();
-      this.hud.message("All pylons down — the cage is open!", 3);
+      this.hud.message(MISSION.messages.allPylonsDown, 3);
     }
     this.updateObjective();
   }
@@ -522,9 +524,9 @@ export class Game implements GameCtx {
       return;
     }
     const t: Record<string, string> = {
-      pylons: `▸ Destroy the conversion pylons (${3 - this.pylonsLeft}/3) — follow the ◆ marker or the purple beams`,
-      cage: "▸ The cage is open! Walk INTO the cage north of the Charminar to free the captives (◆)",
-      escape: "▸ Run back to the extraction pad at the start — follow the ◆ marker / green beam",
+      pylons: fmt(MISSION.objectives.pylons, { done: this.pylonTotal - this.pylonsLeft, total: this.pylonTotal }),
+      cage: MISSION.objectives.cage,
+      escape: MISSION.objectives.escape,
     };
     this.hud.setObjective(t[this.phase] ?? "");
   }

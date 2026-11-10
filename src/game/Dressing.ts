@@ -1,6 +1,6 @@
-import { Color3, DynamicTexture, Mesh, PointLight, StandardMaterial, Vector3, type Scene } from "@babylonjs/core";
+import { Color3, Mesh, PointLight, StandardMaterial, Texture, type TransformNode, Vector3, type Scene } from "@babylonjs/core";
 import type { Level } from "./Level";
-import { makeSolid, place } from "./Props";
+import { place } from "./Props";
 import { dressWarDamage } from "./WarDressing";
 
 /**
@@ -16,46 +16,25 @@ const MODULES: Record<9 | 11 | 14, [string, number][]> = {
   14: [["Facade_E_6x14", 6], ["Facade_F_4x14", 4]],
 };
 
-// Shop-sign texts (generic, no real brands). Laad Bazaar is famous for bangles; Irani chai is a Hyderabad staple.
-const SIGNS: { text: string; font: string; bg: string; fg: string }[] = [
-  { text: "లాడ్ బజార్", font: "bold 64px sans-serif", bg: "#b8202a", fg: "#ffe9a8" },      // Telugu: Laad Bazaar
-  { text: "ఇరానీ చాయ్", font: "bold 64px sans-serif", bg: "#1d5e8c", fg: "#ffffff" },      // Telugu: Irani chai
-  { text: "గాజుల దుకాణం", font: "bold 58px sans-serif", bg: "#7b2d8e", fg: "#ffd36b" },    // Telugu: bangle shop
-  { text: "लाड बाज़ार", font: "bold 64px sans-serif", bg: "#d4851c", fg: "#2a1200" },       // Hindi: Laad Bazaar
-  { text: "पान भंडार", font: "bold 64px sans-serif", bg: "#226b3a", fg: "#fff4c2" },        // Hindi: paan shop
-  { text: "बिरयानी हाउस", font: "bold 60px sans-serif", bg: "#8c1c1c", fg: "#ffe0a0" },     // Hindi: biryani house
-  { text: "لاڈ بازار", font: "bold 64px sans-serif", bg: "#0f6b62", fg: "#ffffff" },        // Urdu: Laad Bazaar
-  { text: "ایرانی چائے", font: "bold 60px sans-serif", bg: "#5a3a1a", fg: "#ffd27a" },      // Urdu: Irani chai
-  { text: "NAWAB BANGLES", font: "bold 60px sans-serif", bg: "#e8e0c8", fg: "#9a1b2e" },
-  { text: "CHAI • BUN MASKA", font: "bold 52px sans-serif", bg: "#f2c12e", fg: "#3a1a00" },
-];
+// Shop signs: 10 pre-rendered variants (tools/textures/generators.ts → public/textures/generated/sign_NN.png),
+// drawn upside down because the facade sign panel's V axis is flipped. Cycled across the facades in placement order.
+const SIGN_COUNT = 10;
+const BASE = import.meta.env.BASE_URL;
 let signIdx = 0;
+const signMats = new Map<number, StandardMaterial>();
 
 function signMaterial(scene: Scene): StandardMaterial {
-  const s = SIGNS[signIdx++ % SIGNS.length];
-  const tex = new DynamicTexture("signTex", { width: 512, height: 96 }, scene, true);
-  const ctx = tex.getContext() as unknown as CanvasRenderingContext2D;
-  ctx.fillStyle = s.bg;
-  ctx.fillRect(0, 0, 512, 96);
-  ctx.strokeStyle = s.fg;
-  ctx.lineWidth = 4;
-  ctx.strokeRect(6, 6, 500, 84);
-  ctx.font = s.font;
-  ctx.fillStyle = s.fg;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  // The sign panel's V axis is flipped in the facade model (verified with a Latin test string), so draw upside down
-  ctx.save();
-  ctx.translate(0, 96);
-  ctx.scale(1, -1);
-  ctx.fillText(s.text, 256, 48, 480);
-  ctx.restore();
-  tex.update(true);
-  const m = new StandardMaterial("signMat", scene);
-  m.diffuseTexture = tex;
-  m.emissiveTexture = tex; // lit sign boards read at night and add colour
-  m.emissiveColor = new Color3(0.55, 0.55, 0.55);
-  m.specularColor = Color3.Black();
+  const i = signIdx++ % SIGN_COUNT;
+  let m = signMats.get(i);
+  if (!m) {
+    const tex = new Texture(`${BASE}textures/generated/sign_${String(i).padStart(2, "0")}.png`, scene);
+    m = new StandardMaterial(`signMat${i}`, scene);
+    m.diffuseTexture = tex;
+    m.emissiveTexture = tex; // lit sign boards read at night and add colour
+    m.emissiveColor = new Color3(0.55, 0.55, 0.55);
+    m.specularColor = Color3.Black();
+    signMats.set(i, m);
+  }
   return m;
 }
 
@@ -115,62 +94,29 @@ async function facadeRun(scene: Scene, axis: "x" | "z", wall: number, from: numb
 }
 
 export async function dressLevel(scene: Scene, level: Level): Promise<void> {
-  const E = Math.PI / 2, W = -Math.PI / 2, N = 0, S = Math.PI;
-  const jobs: Promise<unknown>[] = [
-    // Bazaar lane, west side (wall face x = -4, fronts face east)
-    facadeRun(scene, "x", -4, 0.5, 25.5, 9, E, 0.02),
-    facadeRun(scene, "x", -4, 32.5, 59.5, 11, E, 0.02),
-    // Bazaar lane, east side (wall face x = 4, fronts face west); skip the secret-room wall (z 15–21)
-    facadeRun(scene, "x", 4, 0.5, 14.5, 11, W, -0.02),
-    facadeRun(scene, "x", 4, 21.5, 39.5, 9, W, -0.02),
-    facadeRun(scene, "x", 4, 40.5, 59.5, 14, W, -0.02),
-    // Plaza: south wall (fronts face north), north wall (face south), west and east walls
-    facadeRun(scene, "z", 60, -25.5, -4.5, 11, N, 0.02),
-    facadeRun(scene, "z", 60, 4.5, 25.5, 11, N, 0.02),
-    facadeRun(scene, "z", 112, -25.5, 25.5, 11, S, -0.02),
-    facadeRun(scene, "x", -26, 85, 111.5, 11, E, 0.02),
-    facadeRun(scene, "x", 26, 60.5, 79.5, 11, W, -0.02),
-    facadeRun(scene, "x", 26, 98.5, 111.5, 11, W, -0.02),
-  ];
-
-  // ── Debris: tells the story of the invasion ──
-  const solid = (x1: number, x2: number, z1: number, z2: number, h: number) => {
-    level.box("debris-collider", x1, x2, z1, z2, 0, h, "#000000").isVisible = false;
-  };
-  // Burning car at the plaza entrance (warm light against the alien purple)
-  jobs.push(place(scene, "debris.glb", new Vector3(-9, 0, 63.5), 0.35, "Burning_Car").then((p) => {
-    solid(-10.9, -7.1, 62.6, 64.4, 1.4);
-    const fire = new PointLight("fire", new Vector3(-9, 1.8, 63.5), scene);
-    fire.diffuse = Color3.FromHexString("#ff8a2a");
-    fire.range = 11;
-    let t = 0;
-    const flames = scene.materials.filter((m) => m.name === "FireGlow" || m.name === "FireCore") as unknown as { emissiveIntensity: number }[];
-    scene.onBeforeRenderObservable.add(() => {
-      if (p.root.isDisposed()) return;
-      t += scene.getEngine().getDeltaTime() / 1000;
-      const k = 0.75 + Math.sin(t * 13) * 0.12 + Math.sin(t * 7.3) * 0.13;
-      fire.intensity = 1.6 * k;
-      for (const f of flames) f.emissiveIntensity = k * 1.2;
-    });
-  }));
-  // Alien drop-pod rammed into the plaza near the cage
-  jobs.push(place(scene, "debris.glb", new Vector3(16, 0, 103), -0.6, "Crashed_Pod").then(() => {
-    const c = level.box("pod-collider", 14, 18, 101, 105, 0, 3, "#000000");
-    c.isVisible = false;
-  }));
-  // Human defences at the shelter yard (start / extraction)
-  jobs.push(place(scene, "debris.glb", new Vector3(-7.5, 0, -2.2), 0, "Sandbag_Wall").then(() => solid(-9.1, -5.9, -2.45, -1.95, 1)));
-  jobs.push(place(scene, "debris.glb", new Vector3(7.5, 0, -2.2), 0, "Sandbag_Wall").then(() => solid(5.9, 9.1, -2.45, -1.95, 1)));
-  jobs.push(place(scene, "debris.glb", new Vector3(2.6, 0, 1.6), -0.5, "Barricade"));
-  // Rubble from shelled buildings (low, walk-over decor)
-  // (The old scripted "Rubble_Pile" was loose blocks that read as floating stones; use the photoscanned rubble instead.)
-  for (const [file, x, z, yaw] of [["concrete_chunks", -3.1, 18.5, 0.3], ["concrete_chunks", 3.25, 44.3, 2.1],
-    ["concrete_chunks", -20, 106, 1], ["concrete_chunks", 21, 66, 4], ["concrete_chunks", -29.5, 38, 0.8]] as [string, number, number, number][]) {
-    jobs.push(place(scene, `props/${file}.glb`, new Vector3(x, 0, z), yaw).then((p) => makeSolid(p)));
-  }
-
-  jobs.push(dressWarDamage(scene, level)); // key-art war damage: wrecks, rubble, banners, screens, decals, puddles
+  signIdx = 0;
+  // Building fronts tiled along the wall runs listed in the level data
+  const jobs: Promise<unknown>[] = level.data.facadeRuns.map((f) =>
+    facadeRun(scene, f.axis, f.wall, f.from, f.to, f.height, f.yaw, f.inset));
+  // (Debris, wrecks, rubble and street props are placed from the level data by Level.decorate().)
+  jobs.push(dressWarDamage(scene, level)); // key-art banners, screens, decals, puddles
   const results = await Promise.allSettled(jobs);
   const failed = results.filter((r) => r.status === "rejected");
   if (failed.length) console.warn(`[dressLevel] ${failed.length} placements failed`, failed);
+}
+
+/** Burning car: flickering fire light + pulsing flame materials (placed by the level data's "burningCar" effect). */
+export function burningCarFire(scene: Scene, at: Vector3, root: TransformNode): void {
+  const fire = new PointLight("fire", at, scene);
+  fire.diffuse = Color3.FromHexString("#ff8a2a");
+  fire.range = 11;
+  let t = 0;
+  const flames = scene.materials.filter((m) => m.name === "FireGlow" || m.name === "FireCore") as unknown as { emissiveIntensity: number }[];
+  scene.onBeforeRenderObservable.add(() => {
+    if (root.isDisposed()) return;
+    t += scene.getEngine().getDeltaTime() / 1000;
+    const k = 0.75 + Math.sin(t * 13) * 0.12 + Math.sin(t * 7.3) * 0.13;
+    fire.intensity = 1.6 * k;
+    for (const f of flames) f.emissiveIntensity = k * 1.2;
+  });
 }

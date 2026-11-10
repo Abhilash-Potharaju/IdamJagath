@@ -6,6 +6,10 @@ import { burst } from "./fx";
 import type { SoundName } from "./Audio";
 import { Feel } from "./feel";
 import { attachMonsterModel, CRAWLER_MODEL, SPITTER_MODEL } from "./monsterModels";
+import { GAMEPLAY } from "../data/gameplay";
+
+// Tuning from data/gameplay/enemies.json (engine-neutral)
+const CR = GAMEPLAY.enemies.crawler, SP = GAMEPLAY.enemies.spitter, WA = GAMEPLAY.enemies.warden;
 
 /** What enemies need from the game, kept narrow to avoid circular deps. */
 export interface GameCtx {
@@ -256,7 +260,7 @@ export class Crawler extends Enemy {
   private lungeDir = Vector3.Zero();
   private lungeHit = false;
   private biteCd = 0;
-  private lungeCd = 1;
+  private lungeCd = CR.lunge.initialCooldown;
   private phase = Math.random() * 10;
   // rig
   private rig: TransformNode;
@@ -272,7 +276,7 @@ export class Crawler extends Enemy {
 
   constructor(ctx: GameCtx, pos: Vector3) {
     const m = mat(ctx.scene, "#5a1f2e", "#1a0408");
-    super(ctx, pos, 0.45, 0.5, 40, m);
+    super(ctx, pos, CR.halfHeight, CR.radius, CR.hp, m);
     this.restEmissive = m.emissiveColor.clone();
     const s = ctx.scene;
     const shell = shared(s, "crawler-shell", "#2e0f18", "#0a0204");
@@ -300,7 +304,7 @@ export class Crawler extends Enemy {
     const headM = this.part(MeshBuilder.CreateSphere("crawler-head", { diameter: 1, segments: 8 }, s), 1, this.head);
     headM.scaling.set(0.46, 0.34, 0.42);
     for (const x of [-0.12, 0.12]) {
-      const e = this.part(MeshBuilder.CreateSphere("eye", { diameter: 0.13, segments: 6 }, s), 1.5, this.head, eyeMat);
+      const e = this.part(MeshBuilder.CreateSphere("eye", { diameter: 0.13, segments: 6 }, s), CR.weakSpots.eye, this.head, eyeMat);
       e.position.set(x, 0.08, 0.17);
     }
     for (const side of [-1, 1]) {
@@ -328,7 +332,7 @@ export class Crawler extends Enemy {
         this.legs.push({ hip, knee, side, group: (i + (side > 0 ? 0 : 1)) % 2, baseYaw });
       });
     }
-    this.sightRange = 26;
+    this.sightRange = CR.sightRange;
     attachMonsterModel(this, CRAWLER_MODEL);
   }
 
@@ -346,16 +350,16 @@ export class Crawler extends Enemy {
     switch (this.state) {
       case "chase": {
         this.face(toP, dt);
-        const side = new Vector3(toP.z, 0, -toP.x).scale(Math.sin(this.phase * 4) * 0.6);
-        this.move(toP.add(side).normalize(), 5.2, dt);
-        if (dist < 1.6 && this.biteCd <= 0) {
-          this.ctx.player.hurt(8, this.pos, 4);
+        const side = new Vector3(toP.z, 0, -toP.x).scale(Math.sin(this.phase * CR.zigzagRate) * CR.zigzagWeight);
+        this.move(toP.add(side).normalize(), CR.chaseSpeed, dt);
+        if (dist < CR.bite.range && this.biteCd <= 0) {
+          this.ctx.player.hurt(CR.bite.damage, this.pos, CR.bite.knockback);
           this.ctx.hud.damageFlash();
           this.ctx.sound("crawler_bite", this.pos.clone());
-          this.biteCd = 0.9;
-        } else if (dist < 7.5 && dist > 2.5 && this.lungeCd <= 0 && this.seesPlayer()) {
+          this.biteCd = CR.bite.cooldown;
+        } else if (dist < CR.lunge.maxRange && dist > CR.lunge.minRange && this.lungeCd <= 0 && this.seesPlayer()) {
           this.state = "windup";
-          this.t = 0.45;
+          this.t = CR.lunge.windup;
           this.glow(new Color3(1, 0.45, 0));
           this.ctx.sound("crawler_windup", this.pos.clone());
           this.ctx.hint("crawler", "Crawlers glow orange before they lunge — strafe sideways!");
@@ -367,7 +371,7 @@ export class Crawler extends Enemy {
         this.t -= dt;
         if (this.t <= 0) {
           this.state = "lunge";
-          this.t = 0.35;
+          this.t = CR.lunge.duration;
           this.lungeDir = toP.clone();
           this.lungeHit = false;
           this.glow(null);
@@ -376,18 +380,18 @@ export class Crawler extends Enemy {
         break;
       case "lunge":
         this.t -= dt;
-        this.move(this.lungeDir, 19, dt);
-        if (!this.lungeHit && dist < 1.4) {
+        this.move(this.lungeDir, CR.lunge.speed, dt);
+        if (!this.lungeHit && dist < CR.lunge.hitRange) {
           this.lungeHit = true;
-          this.ctx.player.hurt(18, this.pos, 10);
+          this.ctx.player.hurt(CR.lunge.damage, this.pos, CR.lunge.knockback);
           this.ctx.hud.damageFlash();
           this.ctx.sound("crawler_bite", this.pos.clone());
         }
-        if (this.t <= 0) { this.state = "recover"; this.t = 0.7; }
+        if (this.t <= 0) { this.state = "recover"; this.t = CR.lunge.recover; }
         break;
       case "recover":
         this.t -= dt;
-        if (this.t <= 0) { this.state = "chase"; this.lungeCd = 2.2; }
+        if (this.t <= 0) { this.state = "chase"; this.lungeCd = CR.lunge.cooldown; }
         break;
     }
   }
@@ -450,7 +454,7 @@ export class Crawler extends Enemy {
  * Tell: its sac swells and its neck rears back before firing. Counter: sidestep the glob; shoot the glowing SAC for double damage.
  */
 export class Spitter extends Enemy {
-  private fireCd = 1.5;
+  private fireCd = SP.fire.initialCooldown;
   private windup = 0;
   private strafeDir = Math.random() < 0.5 ? 1 : -1;
   private strafeT = 2;
@@ -465,7 +469,7 @@ export class Spitter extends Enemy {
 
   constructor(ctx: GameCtx, pos: Vector3) {
     const m = mat(ctx.scene, "#2f4a2a", "#061006");
-    super(ctx, pos, 1.1, 0.4, 60, m);
+    super(ctx, pos, SP.halfHeight, SP.radius, SP.hp, m);
     this.restEmissive = m.emissiveColor.clone();
     const s = ctx.scene;
     const ridge = shared(s, "spitter-ridge", "#1b2c18", "#020602");
@@ -498,12 +502,12 @@ export class Spitter extends Enemy {
     }
     // Glowing sac on top (weak spot ×2) with a small beak under it
     this.sacMat = this.own(mat(s, "#000000", "#4dff4d"));
-    this.sac = this.part(MeshBuilder.CreateSphere("sac", { diameter: 0.7, segments: 8 }, s), 2, parent, this.sacMat);
+    this.sac = this.part(MeshBuilder.CreateSphere("sac", { diameter: 0.7, segments: 8 }, s), SP.weakSpots.sac, parent, this.sacMat);
     this.sac.position.y = 0.55;
     const beak = this.part(MeshBuilder.CreateCylinder("beak", { diameterTop: 0, diameterBottom: 0.2, height: 0.35, tessellation: 6 }, s), 1, parent, ridge);
     beak.rotation.x = Math.PI / 2;
     beak.position.set(0, 0.35, 0.3);
-    this.sightRange = 34;
+    this.sightRange = SP.sightRange;
     attachMonsterModel(this, SPITTER_MODEL);
   }
 
@@ -517,7 +521,7 @@ export class Spitter extends Enemy {
 
     if (this.windup > 0) {
       this.windup -= dt;
-      const k = 1 - this.windup / 0.6;
+      const k = 1 - this.windup / SP.fire.windup;
       this.sac.scaling.setAll(1 + k * 0.6);
       this.sacMat.emissiveColor = Color3.Lerp(Color3.FromHexString("#4dff4d"), new Color3(0.9, 1, 0.6), k);
       if (this.windup <= 0) {
@@ -528,23 +532,23 @@ export class Spitter extends Enemy {
         this.ctx.spawnGlob(from, dir);
         this.ctx.sound("spitter_spit", this.pos.clone());
         this.snap = 1;
-        this.fireCd = 2.4;
+        this.fireCd = SP.fire.cooldown;
       }
       return;
     }
 
     // Keep range 10–20 m, strafe while doing so
     let want = Vector3.Zero();
-    if (!sees || dist > 20) want = toP;
-    else if (dist < 10) want = toP.scale(-1);
+    if (!sees || dist > SP.maxRange) want = toP;
+    else if (dist < SP.minRange) want = toP.scale(-1);
     this.strafeT -= dt;
     if (this.strafeT <= 0) { this.strafeDir *= -1; this.strafeT = 1.5 + Math.random() * 2; }
-    if (sees) want = want.add(new Vector3(toP.z, 0, -toP.x).scale(this.strafeDir * 0.6));
-    if (want.lengthSquared() > 0) this.move(want.normalize(), 3.2, dt);
+    if (sees) want = want.add(new Vector3(toP.z, 0, -toP.x).scale(this.strafeDir * SP.strafeWeight));
+    if (want.lengthSquared() > 0) this.move(want.normalize(), SP.moveSpeed, dt);
 
     this.fireCd -= dt;
     if (sees && this.fireCd <= 0) {
-      this.windup = 0.6;
+      this.windup = SP.fire.windup;
       this.ctx.sound("spitter_charge", this.pos.clone());
       this.ctx.hint("spitter", "Spitters' sacs swell before they fire — shoot the glowing sac for double damage.");
     }
@@ -585,11 +589,11 @@ export class Spitter extends Enemy {
 export class Warden extends Enemy {
   private state: "drop" | "stalk" | "windup" | "charge" | "stunned" | "recover" = "drop";
   private t = 0;
-  private chargeCd = 3;
+  private chargeCd = WA.charge.initialCooldown;
   private chargeDir = Vector3.Zero();
   private chargeHit = false;
   private shield: Mesh;
-  private dropY = 22;
+  private dropY = WA.dropHeight;
   // rig
   private torso: TransformNode;
   private head: TransformNode;
@@ -605,7 +609,7 @@ export class Warden extends Enemy {
 
   constructor(ctx: GameCtx, pos: Vector3) {
     const m = mat(ctx.scene, "#3b2a4f", "#12061f");
-    super(ctx, pos, 1.5, 1.1, 340, m);
+    super(ctx, pos, WA.halfHeight, WA.radius, WA.hp, m);
     this.restEmissive = m.emissiveColor.clone();
     this.deathTime = 0.9;
     this.deathColor = "#ffe066";
@@ -689,12 +693,12 @@ export class Warden extends Enemy {
     });
 
     this.awake = true;
-    this.sightRange = 60;
+    this.sightRange = WA.sightRange;
     this.root.position.y = this.dropY;
   }
 
   takeDamage(amount: number, point: Vector3): void {
-    super.takeDamage(this.state === "stunned" ? amount * 2 : amount, point);
+    super.takeDamage(this.state === "stunned" ? amount * WA.stun.damageMultiplier : amount, point);
   }
 
   protected think(dt: number): void {
@@ -702,23 +706,23 @@ export class Warden extends Enemy {
     const dist = this.distToPlayer();
     switch (this.state) {
       case "drop":
-        this.root.position.y = Math.max(1.5, this.root.position.y - dt * 25);
-        if (this.root.position.y <= 1.5) {
+        this.root.position.y = Math.max(WA.halfHeight, this.root.position.y - dt * WA.dropSpeed);
+        if (this.root.position.y <= WA.halfHeight) {
           burst(this.ctx.scene, this.pos.clone(), "#8a5cff", 3, 0.4);
           this.ctx.sound("warden_land", this.pos.clone());
-          if (dist < 5) { this.ctx.player.hurt(15, this.pos, 12); this.ctx.hud.damageFlash(); }
+          if (dist < WA.land.radius) { this.ctx.player.hurt(WA.land.damage, this.pos, WA.land.knockback); this.ctx.hud.damageFlash(); }
           this.state = "stalk";
           this.flinch = 1; // knees buckle on landing
         }
         break;
       case "stalk":
-        this.face(toP, dt, 1.6); // slow turner: you can flank it
-        this.move(toP, 2.6, dt);
+        this.face(toP, dt, WA.turnRate); // slow turner: you can flank it
+        this.move(toP, WA.stalkSpeed, dt);
         this.chargeCd -= dt;
-        if (dist < 2.6) { this.ctx.player.hurt(20 * dt * 2, this.pos, 6); }
-        if (this.chargeCd <= 0 && dist > 5 && dist < 35 && this.seesPlayer()) {
+        if (dist < WA.contact.range) { this.ctx.player.hurt(WA.contact.damagePerSecond * dt, this.pos, WA.contact.knockback); }
+        if (this.chargeCd <= 0 && dist > WA.charge.minRange && dist < WA.charge.maxRange && this.seesPlayer()) {
           this.state = "windup";
-          this.t = 1.1;
+          this.t = WA.charge.windup;
           this.glow(new Color3(1, 0.1, 0.1));
           this.ctx.sound("warden_roar", this.pos.clone());
           this.ctx.hint("warden-charge", "It's about to charge — get out of the line!");
@@ -729,7 +733,7 @@ export class Warden extends Enemy {
         this.t -= dt;
         if (this.t <= 0) {
           this.state = "charge";
-          this.t = 2.2;
+          this.t = WA.charge.duration;
           // Lock direction to where it is FACING, so sidestepping late works
           this.chargeDir = new Vector3(Math.sin(this.root.rotation.y), 0, Math.cos(this.root.rotation.y));
           this.chargeHit = false;
@@ -738,16 +742,16 @@ export class Warden extends Enemy {
         break;
       case "charge": {
         this.t -= dt;
-        const frac = this.move(this.chargeDir, 21, dt);
-        if (!this.chargeHit && dist < 2.4) {
+        const frac = this.move(this.chargeDir, WA.charge.speed, dt);
+        if (!this.chargeHit && dist < WA.charge.hitRange) {
           this.chargeHit = true;
-          this.ctx.player.hurt(35, this.pos, 18);
+          this.ctx.player.hurt(WA.charge.damage, this.pos, WA.charge.knockback);
           this.ctx.hud.damageFlash();
         }
-        if (frac < 0.35) {
+        if (frac < WA.charge.wallStopFraction) {
           // Slammed into a wall
           this.state = "stunned";
-          this.t = 3.5;
+          this.t = WA.stun.duration;
           this.shield.setEnabled(false);
           this.glow(new Color3(0.9, 0.8, 0.1));
           burst(this.ctx.scene, this.pos.add(this.chargeDir.scale(1.2)), "#ffe066", 2, 0.3);
@@ -756,7 +760,7 @@ export class Warden extends Enemy {
           this.ctx.hud.message("WARDEN STUNNED — SHIELD DOWN!", 2);
         } else if (this.t <= 0) {
           this.state = "recover";
-          this.t = 1;
+          this.t = WA.charge.recover;
           this.glow(null);
         }
         break;
@@ -767,12 +771,12 @@ export class Warden extends Enemy {
           this.shield.setEnabled(true);
           this.glow(null);
           this.state = "stalk";
-          this.chargeCd = 2.5;
+          this.chargeCd = WA.charge.cooldownAfterStun;
         }
         break;
       case "recover":
         this.t -= dt;
-        if (this.t <= 0) { this.state = "stalk"; this.chargeCd = 3.5; }
+        if (this.t <= 0) { this.state = "stalk"; this.chargeCd = WA.charge.cooldownAfterRecover; }
         break;
     }
   }

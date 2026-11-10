@@ -22,20 +22,82 @@ const MAX_DIST = 60;
 
 type Recipe = (s: Synth, t: number) => number; // returns duration in seconds
 
+/** Per-play pitch variation (±6%) so repeats don't sound robotic. Applied to both synth and file playback. */
+function randomPitch(): number {
+  return 1 + (Math.random() - 0.5) * 0.12;
+}
+
+/** Every sound name, in a stable order (used for loading and exporting). */
+export const SOUND_NAMES = [
+  "vajra_fire", "trishul_fire", "reload", "switch", "hit", "player_hurt", "pickup", "secret",
+  "crawler_windup", "crawler_lunge", "crawler_bite", "spitter_charge", "spitter_spit", "glob_splash",
+  "warden_land", "warden_roar", "warden_charge", "warden_impact", "warden_stun", "warden_death",
+  "enemy_hurt", "enemy_death", "pylon_hit", "pylon_explode", "alarm", "cage_open", "captives_freed", "win", "lose",
+  "footstep", "footstep_run", "land", "heartbeat", "shell_drop", "impact_stone", "impact_flesh", "kill_confirm",
+] as const satisfies readonly SoundName[];
+
+/** Audio files (rendered from the recipes by tools/dev/export_audio.mjs). ?synthaudio forces live synthesis. */
+const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/`;
+const USE_FILES = !new URLSearchParams(location.search).has("synthaudio");
+interface AudioManifest { sounds: { name: string; file: string; duration: number }[]; ambience?: { file: string; duration: number } }
+
+function makeNoise(ctx: BaseAudioContext): AudioBuffer {
+  const len = ctx.sampleRate * 2;
+  const b = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+
+function makeDistCurve(): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i / (curve.length - 1)) * 2 - 1;
+    curve[i] = Math.tanh(x * 3);
+  }
+  return curve;
+}
+
+/** 16-bit PCM WAV encoding (mono or stereo). */
+function encodeWav(buf: AudioBuffer): ArrayBuffer {
+  const ch = buf.numberOfChannels, n = buf.length, sr = buf.sampleRate;
+  const out = new ArrayBuffer(44 + n * ch * 2);
+  const v = new DataView(out);
+  const str = (o: number, t: string) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  str(0, "RIFF"); v.setUint32(4, 36 + n * ch * 2, true); str(8, "WAVE"); str(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, ch, true); v.setUint32(24, sr, true);
+  v.setUint32(28, sr * ch * 2, true); v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true);
+  str(36, "data"); v.setUint32(40, n * ch * 2, true);
+  const chans = Array.from({ length: ch }, (_, c) => buf.getChannelData(c));
+  let o = 44;
+  for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) {
+    const x = Math.max(-1, Math.min(1, chans[c][i]));
+    v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7fff, true); o += 2;
+  }
+  return out;
+}
+
+function toBase64(ab: ArrayBuffer): string {
+  const bytes = new Uint8Array(ab);
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
 /** Small helper bound to one output node: builds oscillators / noise with envelopes. */
 class Synth {
-  readonly ctx: AudioContext;
+  readonly ctx: BaseAudioContext;
   readonly out: AudioNode;
   readonly noiseBuf: AudioBuffer;
   readonly pitch: number; // random per-play pitch multiplier
   private distCurve: Float32Array<ArrayBuffer>;
 
-  constructor(ctx: AudioContext, out: AudioNode, noiseBuf: AudioBuffer, distCurve: Float32Array<ArrayBuffer>) {
+  constructor(ctx: BaseAudioContext, out: AudioNode, noiseBuf: AudioBuffer, distCurve: Float32Array<ArrayBuffer>, pitch?: number) {
     this.ctx = ctx;
     this.out = out;
     this.noiseBuf = noiseBuf;
     this.distCurve = distCurve;
-    this.pitch = 1 + (Math.random() - 0.5) * 0.12;
+    this.pitch = pitch ?? randomPitch();
   }
 
   /** Gain envelope: quick attack, exponential decay to silence at t + dur. */
@@ -343,8 +405,14 @@ const SHAKE: Partial<Record<SoundName, number>> = {
   cage_open: 0.15, warden_death: 0.4,
 };
 
-/** Synthesizes every game sound at runtime with the Web Audio API: no files, no libraries. */
+/**
+ * Game audio. Plays the pre-rendered files in public/audio/ (see public/audio/manifest.json), through the same
+ * per-sound gain, distance falloff, stereo panning, voice limits, pitch variation and reverb as before.
+ * The original Web Audio synth recipes remain the fallback (and the source the files were rendered from).
+ */
 export class Audio {
+  private buffers = new Map<SoundName, AudioBuffer>();
+  private ambienceBuffer: AudioBuffer | null = null;
   private ctx: AudioContext | null = null;
   private master!: GainNode;
   private sfx!: GainNode;
@@ -398,7 +466,18 @@ export class Audio {
     panner.connect(this.sfx);
     panner.connect(this.reverbIn);
 
-    const dur = R[name](new Synth(ctx, out, this.noiseBuf, this.distCurve), t);
+    let dur: number;
+    const buf = this.buffers.get(name);
+    if (buf) {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = randomPitch();
+      src.connect(out);
+      src.start(t);
+      dur = buf.duration / src.playbackRate.value;
+    } else {
+      dur = R[name](new Synth(ctx, out, this.noiseBuf, this.distCurve), t);
+    }
     this.voices.set(name, n + 1);
     window.setTimeout(() => {
       this.voices.set(name, Math.max(0, (this.voices.get(name) ?? 1) - 1));
@@ -465,20 +544,41 @@ export class Audio {
     conv.connect(wet);
     wet.connect(this.master);
 
-    // Cached 2 s white-noise buffer
-    const len = ctx.sampleRate * 2;
-    this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = this.noiseBuf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    // Cached 2 s white-noise buffer + soft-clip curve (synth fallback)
+    this.noiseBuf = makeNoise(ctx);
+    this.distCurve = makeDistCurve();
 
-    // Soft-clip distortion curve
-    const curve = new Float32Array(1024);
-    for (let i = 0; i < curve.length; i++) {
-      const x = (i / (curve.length - 1)) * 2 - 1;
-      curve[i] = Math.tanh(x * 3);
-    }
-    this.distCurve = curve;
+    if (USE_FILES) void this.loadFiles(ctx);
+    else this.startAmbience();
+  }
 
+  /** Number of decoded sound files (for diagnostics/tests). */
+  get loadedFiles(): number {
+    return this.buffers.size + (this.ambienceBuffer ? 1 : 0);
+  }
+
+  /** Fetch + decode every file in the manifest; anything missing falls back to the synth recipe. */
+  private async loadFiles(ctx: AudioContext): Promise<void> {
+    let manifest: AudioManifest | null = null;
+    try {
+      const r = await fetch(`${AUDIO_BASE}manifest.json`);
+      if (r.ok) manifest = (await r.json()) as AudioManifest;
+    } catch { /* offline/missing: synth fallback */ }
+    if (!manifest) { this.startAmbience(); return; }
+    const decode = async (file: string): Promise<AudioBuffer | null> => {
+      try {
+        const r = await fetch(AUDIO_BASE + file);
+        if (!r.ok) return null;
+        return await ctx.decodeAudioData(await r.arrayBuffer());
+      } catch { return null; }
+    };
+    const amb = manifest.ambience ? decode(manifest.ambience.file) : Promise.resolve(null);
+    await Promise.all(manifest.sounds.map(async (s) => {
+      if (!(s.name in R)) return;
+      const b = await decode(s.file);
+      if (b) this.buffers.set(s.name as SoundName, b);
+    }));
+    this.ambienceBuffer = await amb;
     this.startAmbience();
   }
 
@@ -499,58 +599,104 @@ export class Audio {
     amb.gain.setValueAtTime(0, ctx.currentTime);
     amb.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 3);
     amb.connect(this.master);
-
-    // Hum: detuned low oscillators through a slowly sweeping low-pass
-    const hum = ctx.createBiquadFilter();
-    hum.type = "lowpass";
-    hum.frequency.value = 260;
-    hum.Q.value = 4;
-    hum.connect(amb);
-    for (const [type, f, v] of [["sawtooth", 55, 0.18], ["sawtooth", 55.6, 0.18], ["sine", 82.4, 0.25], ["triangle", 110.3, 0.06]] as const) {
-      const o = ctx.createOscillator();
-      o.type = type;
-      o.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = v;
-      o.connect(g);
-      g.connect(hum);
-      o.start();
+    if (this.ambienceBuffer) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.ambienceBuffer;
+      src.loop = true;
+      src.connect(amb);
+      src.start();
+      return;
     }
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.07;
-    const lfoG = ctx.createGain();
-    lfoG.gain.value = 140;
-    lfo.connect(lfoG);
-    lfoG.connect(hum.frequency);
-    lfo.start();
-
-    // Wind: band-passed noise with slowly wandering level and centre
-    const src = ctx.createBufferSource();
-    src.buffer = this.noiseBuf;
-    src.loop = true;
-    const bp = ctx.createBiquadFilter();
-    bp.type = "bandpass";
-    bp.frequency.value = 500;
-    bp.Q.value = 0.8;
-    const windG = ctx.createGain();
-    windG.gain.value = 0.35;
-    src.connect(bp);
-    bp.connect(windG);
-    windG.connect(amb);
-    src.start();
-    const wl = ctx.createOscillator();
-    wl.frequency.value = 0.11;
-    const wlG = ctx.createGain();
-    wlG.gain.value = 0.22;
-    wl.connect(wlG);
-    wlG.connect(windG.gain);
-    wl.start();
-    const wf = ctx.createOscillator();
-    wf.frequency.value = 0.05;
-    const wfG = ctx.createGain();
-    wfG.gain.value = 250;
-    wf.connect(wfG);
-    wfG.connect(bp.frequency);
-    wf.start();
+    buildAmbience(ctx, amb, this.noiseBuf);
   }
+
+  /**
+   * Dev/export: render every recipe (dry, pitch 1) and the ambience loop to 44.1 kHz WAV, base64-encoded.
+   * Used by tools/dev/export_audio.mjs to produce public/audio/*.wav.
+   */
+  static async renderAll(): Promise<{ name: string; wav: string; duration: number }[]> {
+    const SR = 44100;
+    const out: { name: string; wav: string; duration: number }[] = [];
+    const curve = makeDistCurve();
+    for (const name of SOUND_NAMES) {
+      // Pass 1 measures the recipe's duration, pass 2 renders it with a 0.3 s tail for reverb-free decay
+      const probe = new OfflineAudioContext(1, SR, SR);
+      const dur = R[name](new Synth(probe, probe.createGain(), makeNoise(probe), curve, 1), 0);
+      const len = Math.ceil((dur + 0.3) * SR);
+      const off = new OfflineAudioContext(1, len, SR);
+      R[name](new Synth(off, off.destination, makeNoise(off), curve, 1), 0.005);
+      const buf = await off.startRendering();
+      out.push({ name, wav: toBase64(encodeWav(buf)), duration: +(len / SR).toFixed(3) });
+    }
+    // Ambience: render 24 s, crossfade the last 2 s into the start for a seamless 22 s loop
+    const LOOP = 22, FADE = 2;
+    const off = new OfflineAudioContext(1, (LOOP + FADE) * SR, SR);
+    buildAmbience(off, off.destination, makeNoise(off));
+    const raw = await off.startRendering();
+    const src = raw.getChannelData(0);
+    const loop = new AudioBuffer({ length: LOOP * SR, numberOfChannels: 1, sampleRate: SR });
+    const dst = loop.getChannelData(0);
+    for (let i = 0; i < LOOP * SR; i++) {
+      if (i < FADE * SR) { const k = i / (FADE * SR); dst[i] = src[i] * k + src[i + LOOP * SR] * (1 - k); }
+      else dst[i] = src[i];
+    }
+    out.push({ name: "ambience", wav: toBase64(encodeWav(loop)), duration: LOOP });
+    return out;
+  }
+}
+
+/** The ambience synth graph (alien hum + wind), into `dest`. Shared by live fallback and the exporter. */
+function buildAmbience(ctx: BaseAudioContext, amb: AudioNode, noiseBuf: AudioBuffer): void {
+  // Hum: detuned low oscillators through a slowly sweeping low-pass
+  const hum = ctx.createBiquadFilter();
+  hum.type = "lowpass";
+  hum.frequency.value = 260;
+  hum.Q.value = 4;
+  hum.connect(amb);
+  for (const [type, f, v] of [["sawtooth", 55, 0.18], ["sawtooth", 55.6, 0.18], ["sine", 82.4, 0.25], ["triangle", 110.3, 0.06]] as const) {
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    g.gain.value = v;
+    o.connect(g);
+    g.connect(hum);
+    o.start();
+  }
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.07;
+  const lfoG = ctx.createGain();
+  lfoG.gain.value = 140;
+  lfo.connect(lfoG);
+  lfoG.connect(hum.frequency);
+  lfo.start();
+
+  // Wind: band-passed noise with slowly wandering level and centre
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuf;
+  src.loop = true;
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 500;
+  bp.Q.value = 0.8;
+  const windG = ctx.createGain();
+  windG.gain.value = 0.35;
+  src.connect(bp);
+  bp.connect(windG);
+  windG.connect(amb);
+  src.start();
+  const wl = ctx.createOscillator();
+  wl.frequency.value = 0.11;
+  const wlG = ctx.createGain();
+  wlG.gain.value = 0.22;
+  wl.connect(wlG);
+  wlG.connect(windG.gain);
+  wl.start();
+  const wf = ctx.createOscillator();
+  wf.frequency.value = 0.05;
+  const wfG = ctx.createGain();
+  wfG.gain.value = 250;
+  wf.connect(wfG);
+  wfG.connect(bp.frequency);
+  wf.start();
 }

@@ -5,6 +5,7 @@ import {
 import "@babylonjs/loaders/glTF";
 import { setDamageable } from "./types";
 import type { Enemy } from "./enemies";
+import { GAMEPLAY } from "../data/gameplay";
 
 /**
  * Skins a code-driven enemy with an animated Sketchfab model (CC BY, see src/credits.ts).
@@ -21,12 +22,9 @@ export interface MonsterModelSpec {
   keep?: string[];         // procedural part names to keep visible (e.g. the Spitter's glowing sac)
 }
 
-export const CRAWLER_MODEL: MonsterModelSpec = {
-  file: "spiderthing.glb", length: 1.4, axis: "z", yaw: 0, anim: "ArmatureAction", animSpeedRef: 3.5,
-};
-export const SPITTER_MODEL: MonsterModelSpec = {
-  file: "alien_quadruped.glb", length: 4.4, axis: "x", yaw: -Math.PI / 2, anim: "ArmatureAction", animSpeedRef: 2.2, keep: ["sac"],
-};
+/** Model specs come from data/gameplay/enemies.json (`<type>.model`). */
+export const CRAWLER_MODEL: MonsterModelSpec = GAMEPLAY.enemies.crawler.model;
+export const SPITTER_MODEL: MonsterModelSpec = GAMEPLAY.enemies.spitter.model;
 
 /** ?classicmonsters keeps the old procedural monsters. */
 const ENABLED = !new URLSearchParams(location.search).has("classicmonsters");

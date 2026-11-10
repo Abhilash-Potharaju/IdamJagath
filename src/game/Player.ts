@@ -1,31 +1,34 @@
 import { FreeCamera, Mesh, MeshBuilder, Scene, Vector3 } from "@babylonjs/core";
 import type { Input } from "./Input";
 import { Feel, FeelSettings, Shake } from "./feel";
+import { GAMEPLAY } from "../data/gameplay";
 
-const GRAVITY = -24;
-const WALK = 6.5;
-const SPRINT = 10;
-const CROUCH = 3.6;
-const SLIDE_BOOST = 13.5;
-const SLIDE_TIME = 0.65;
-const JUMP = 8;
-const EYE = 0.7; // eye height above the collision ellipsoid's centre
-const CROUCH_DROP = 0.55; // how much lower the eye goes when crouched
-const SENS = 0.0022;
-const FOV = 1.25;
-const SPRINT_FOV = 0.08; // extra FOV while sprinting
-const ZOOM_FOV = 0.55; // ~2.3x zoom on right click
-const ZOOM_SPEED = 12;
-const ACCEL_GROUND = 70; // m/s² toward the target velocity (snappy but not instant)
-const DECEL_GROUND = 55;
-const ACCEL_AIR = 14;
+// All tuning from data/gameplay/player.json (engine-neutral; units m, s, m/s, rad)
+const P = GAMEPLAY.player;
+const GRAVITY = P.gravity;
+const WALK = P.walkSpeed;
+const SPRINT = P.sprintSpeed;
+const CROUCH = P.crouchSpeed;
+const SLIDE_BOOST = P.slideBoost;
+const SLIDE_TIME = P.slideTime;
+const JUMP = P.jumpSpeed;
+const EYE = P.eyeHeight; // eye height above the collision ellipsoid's centre
+const CROUCH_DROP = P.crouchEyeDrop; // how much lower the eye goes when crouched
+const SENS = P.mouseSensitivity;
+const FOV = P.fov;
+const SPRINT_FOV = P.sprintFovBonus; // extra FOV while sprinting
+const ZOOM_FOV = P.zoomFov; // ~2.3x zoom on right click
+const ZOOM_SPEED = P.zoomSpeed;
+const ACCEL_GROUND = P.accelGround; // m/s² toward the target velocity (snappy but not instant)
+const DECEL_GROUND = P.decelGround;
+const ACCEL_AIR = P.accelAir;
 
 /** First-person player: collision capsule + camera + health, with modern movement/camera feel. */
 export class Player {
   readonly body: Mesh;
   readonly camera: FreeCamera;
-  health = 100;
-  maxHealth = 100;
+  health = P.maxHealth;
+  maxHealth = P.maxHealth;
   yaw = 0;
   pitch = 0;
   /** 0 = hip, 1 = fully zoomed (right mouse). Smoothly animated. */
@@ -64,7 +67,7 @@ export class Player {
     this.body = MeshBuilder.CreateBox("player", { size: 0.5 }, scene);
     this.body.isVisible = false;
     this.body.isPickable = false;
-    this.body.ellipsoid = new Vector3(0.4, 0.9, 0.4);
+    this.body.ellipsoid = Vector3.FromArray(P.collisionHalfExtents);
     this.body.position.copyFrom(spawn);
 
     this.camera = new FreeCamera("cam", spawn.add(new Vector3(0, EYE, 0)), scene);
