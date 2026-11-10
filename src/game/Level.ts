@@ -84,10 +84,12 @@ export class Level {
         const src = m.material as PBRMaterial | null;
         if (!src) continue;
         const burnt = src.clone("auto-burnt") as PBRMaterial;
-        burnt.albedoColor = new Color3(0.16, 0.12, 0.1); // soot over the paint (texture still shows panel detail)
-        burnt.roughness = 0.97;
+        // Keep the real yellow/green paint, darkened with soot (no orange emissive: it made the whole auto orange)
+        burnt.albedoColor = new Color3(0.42, 0.4, 0.38);
+        burnt.roughness = 0.95;
         burnt.metallic = 0;
-        burnt.emissiveColor = new Color3(0.12, 0.03, 0); // faint ember glow from the heat
+        burnt.emissiveColor = new Color3(0, 0, 0);
+        burnt.maxSimultaneousLights = 4;
         m.material = burnt;
       }
     }));

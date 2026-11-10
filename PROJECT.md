@@ -215,4 +215,5 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - **Minaret weathering:** bake now uses tight UV packing + a 4K weathering map (2K with wide margins left only a few pixels per wall), adds a minaret-zone mask with long dark rain/soot streaks, and the map is applied as a **shadow-map lightmap** (multiplies all lighting, so it's visible under the red lights) with a brightness remap so clean stone stays light. Charminar GLB is now about 8.4 MB.
   - Dev test driver moved into the project: `tools/dev/cdp.mjs` (auto-deletes its Chrome profile).
   - Regression: burning auto and lane rubble block movement, mission → MISSION COMPLETE, no errors, build OK.
+- User: "charminar is looking very good now". Fixes from screenshots: the thin ragged "concrete_debris" slabs (read as floating sheets in the courtyard and plaza) replaced everywhere with solid rubble piles/chunks; burning auto keeps its real yellow-green paint darkened by soot (albedo 0.42, no orange emissive); fire light moved above the roof and flames confined to the cabin so the body reads. Mission regression OK.
 

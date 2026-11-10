@@ -497,14 +497,14 @@ export class Environment {
   /** A burning wreck: flickering firelight, flames, smoke, embers. */
   addFire(at: Vector3): void {
     const s = this.scene;
-    const light = new PointLight("fire", at.add(new Vector3(0, 1.4, 0)), s);
+    const light = new PointLight("fire", at.add(new Vector3(0, 2.9, 0)), s); // above the roof: lights the street, not just the wreck
     light.diffuse = Color3.FromHexString("#ff7a2a");
     light.range = 12;
     s.onBeforeRenderObservable.add(() => {
       light.intensity = 1.6 + Math.sin(this.time * 17) * 0.25 + Math.sin(this.time * 7.3) * 0.25 + Math.random() * 0.2;
     });
 
-    const flames = this.ps("flames", 90, at.add(new Vector3(0, 0.6, 0)), new Vector3(-0.6, 0, -0.9), new Vector3(0.6, 0.2, 0.9));
+    const flames = this.ps("flames", 90, at.add(new Vector3(0, 0.9, 0)), new Vector3(-0.35, 0, -0.45), new Vector3(0.35, 0.3, 0.45)); // cabin only, so the body shows
     flames.color1 = new Color4(1, 0.75, 0.25, 1); flames.color2 = new Color4(1, 0.35, 0.05, 1); flames.colorDead = new Color4(0.3, 0.05, 0, 0);
     flames.minSize = 0.18; flames.maxSize = 0.45; flames.minLifeTime = 0.3; flames.maxLifeTime = 0.7;
     flames.emitRate = 70; flames.blendMode = ParticleSystem.BLENDMODE_ADD;

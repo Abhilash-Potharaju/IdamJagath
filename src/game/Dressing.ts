@@ -165,7 +165,7 @@ export async function dressLevel(scene: Scene, level: Level): Promise<void> {
   // Rubble from shelled buildings (low, walk-over decor)
   // (The old scripted "Rubble_Pile" was loose blocks that read as floating stones; use the photoscanned rubble instead.)
   for (const [file, x, z, yaw] of [["concrete_chunks", -3.1, 18.5, 0.3], ["concrete_chunks", 3.25, 44.3, 2.1],
-    ["rubble_pile", -20, 106, 1], ["rubble_pile", 21, 66, 4], ["concrete_debris", -29, 38, 0.8]] as [string, number, number, number][]) {
+    ["rubble_pile", -20, 106, 1], ["rubble_pile", 21, 66, 4], ["rubble_pile", -29.5, 38, 0.8]] as [string, number, number, number][]) {
     jobs.push(place(scene, `props/${file}.glb`, new Vector3(x, 0, z), yaw).then((p) => makeSolid(p)));
   }
 
