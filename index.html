@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Idam Jagath – The Invasion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" class="hidden">
+      <div id="objective"></div>
+      <div id="crosshair"></div>
+      <div id="hitmarker"></div>
+      <div id="toast"></div>
+      <div id="health"><span class="label">HEALTH</span><span id="health-val">100</span></div>
+      <div id="ammo">
+        <div id="weapons"></div>
+        <span id="ammo-val">30</span><span class="label"> / ∞</span>
+      </div>
+      <div id="waypoint"><div class="diamond"></div><div id="waypoint-dist"></div></div>
+      <div id="damage"></div>
+    </div>
+
+    <div id="overlay">
+      <div class="panel">
+        <h1>IDAM JAGATH</h1>
+        <h2 id="overlay-sub">The Invasion · Level 1 — Charminar</h2>
+        <p id="overlay-body">
+          Hyderabad has fallen. Alien conversion pylons are turning captives into monsters.<br />
+          Destroy the pylons, free the captives at the Charminar, and get back to extraction.
+        </p>
+        <p class="controls">
+          WASD / Arrow keys move · Mouse aim · Click shoot · Right-click zoom · 1/2, wheel or Q switch weapon · R reload · M mute · Space jump · Shift sprint
+        </p>
+        <button id="start">Click to play</button>
+        <details class="credits">
+          <summary>Credits: 3D models (CC BY 4.0, modified) · textures & HDRI: Poly Haven (CC0)</summary>
+          <ul id="credits-list"></ul>
+        </details>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

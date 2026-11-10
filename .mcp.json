@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "/Users/abhilashpotharaju/.local/bin/blender-mcp",
+      "args": [],
+      "env": {}
+    },
+    "sketchfab": {
+      "type": "stdio",
+      "command": "/Users/abhilashpotharaju/.local/share/mcp-servers/sketchfab/run.sh",
+      "args": [],
+      "env": {}
+    }
+  }
+}
