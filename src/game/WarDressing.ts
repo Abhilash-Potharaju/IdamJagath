@@ -82,11 +82,11 @@ export async function dressWarDamage(scene: Scene, level: Level): Promise<void> 
   jobs.push(S("car_crashed", -19.5, 76, 0.1));
 
   // ── 2) Rubble and broken masonry at building bases ──
-  jobs.push(S("rubble_pile", -24.2, 96, 0.5));
-  jobs.push(S("rubble_pile", 24.2, 70.5, 2.3));
-  jobs.push(S("rubble_pile", 13, 110.3, 0.2));
+  jobs.push(S("concrete_chunks", -24.2, 96, 0.5));
+  jobs.push(S("concrete_chunks", 24.2, 70.5, 2.3));
+  jobs.push(S("concrete_chunks", 13, 110.3, 0.2));
   jobs.push(S("concrete_chunks", 6.5, 62.6, 0.6)); // (thin "concrete_debris" slabs read as floating sheets; removed)
-  jobs.push(S("rubble_pile", -23.5, 104.5, 1.9));
+  jobs.push(S("concrete_chunks", -23.5, 104.5, 1.9));
   jobs.push(S("concrete_chunks", -3.2, 50.4, 1.57));
   jobs.push(S("concrete_chunks", 19.5, 99.5, 0.4));
 

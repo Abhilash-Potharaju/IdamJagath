@@ -216,4 +216,5 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - Dev test driver moved into the project: `tools/dev/cdp.mjs` (auto-deletes its Chrome profile).
   - Regression: burning auto and lane rubble block movement, mission → MISSION COMPLETE, no errors, build OK.
 - User: "charminar is looking very good now". Fixes from screenshots: the thin ragged "concrete_debris" slabs (read as floating sheets in the courtyard and plaza) replaced everywhere with solid rubble piles/chunks; burning auto keeps its real yellow-green paint darkened by soot (albedo 0.42, no orange emissive); fire light moved above the roof and flames confined to the cabin so the body reads. Mission regression OK.
+- Photoscan "rubble_pile" (Sketchfab) was shredded by decimation into ragged, see-through scraps: all 7 uses replaced with "concrete_chunks". Thin "concrete_debris" was already removed. No photoscan rubble remains.
 
