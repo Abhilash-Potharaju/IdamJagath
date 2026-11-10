@@ -1,7 +1,7 @@
 import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
 import { markWorld } from "./types";
 import { makeSolid, place } from "./Props";
-import { BEAUTY, charminarMaterial } from "./Beauty";
+import { BEAUTY, charminarFloodlights, charminarMaterial } from "./Beauty";
 import { Surfaces } from "./Environment";
 
 /**
@@ -62,7 +62,11 @@ export class Level {
     } else {
       jobs.push(place(s, "charminar_skfb.glb", new Vector3(0, 0, 86)).then((p) => {
         this.charminarBoxes.forEach(hide);
-        if (BEAUTY) { const m = charminarMaterial(s); for (const mesh of p.meshes) mesh.material = m; }
+        if (BEAUTY) {
+          const m = charminarMaterial(s);
+          for (const mesh of p.meshes) mesh.material = m;
+          charminarFloodlights(s, p.meshes, new Vector3(0, 0, 86));
+        }
       }));
     }
 

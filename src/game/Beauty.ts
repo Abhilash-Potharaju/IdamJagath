@@ -1,5 +1,5 @@
 import {
-  Color3, HDRCubeTexture, PBRMaterial, Texture, TransformNode, Vector3, type Mesh, type Scene,
+  Color3, HDRCubeTexture, PBRMaterial, SpotLight, Texture, TransformNode, Vector3, type AbstractMesh, type Mesh, type Scene,
 } from "@babylonjs/core";
 import type { Level } from "./Level";
 import { makeSolid, place } from "./Props";
@@ -134,7 +134,7 @@ export function charminarMaterial(scene: Scene): PBRMaterial {
   // Smooth lime plaster (Poly Haven `painted_plaster_wall`, CC0) tinted to the monument's warm cream stucco.
   // The earlier stone-embedded texture read as dark holes/blotches under the red lighting.
   const m = pbr(scene, "painted_plaster_wall");
-  m.albedoColor = new Color3(0.98, 0.9, 0.76);
+  m.albedoColor = new Color3(0.9, 0.82, 0.68); // real Charminar: warm beige lime stucco over granite
   for (const t of [m.albedoTexture, m.bumpTexture, m.metallicTexture]) {
     if (!t) continue;
     const tx = t as Texture;
@@ -152,4 +152,23 @@ export function charminarMaterial(scene: Scene): PBRMaterial {
   m.useAmbientInGrayScale = true;
   m.ambientTextureImpactOnAnalyticalLights = 0.5;
   return m;
+}
+
+/**
+ * Warm floodlights at the Charminar's base aiming up at each face, like the monument's real night lighting.
+ * They light only the monument meshes (cheap, and they don't change the rest of the scene).
+ */
+export function charminarFloodlights(scene: Scene, meshes: AbstractMesh[], centre: Vector3): void {
+  const warm = Color3.FromHexString("#ffcf8a");
+  const faces: [number, number][] = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  for (const [dx, dz] of faces) {
+    const from = new Vector3(centre.x + dx * 13, 0.4, centre.z + dz * 13);
+    const aim = new Vector3(centre.x + dx * 4, 15, centre.z + dz * 4);
+    const l = new SpotLight("charminar-flood", from, aim.subtract(from).normalize(), 1.15, 2, scene);
+    l.diffuse = warm;
+    l.specular = warm.scale(0.3);
+    l.intensity = 2.4;
+    l.range = 45;
+    l.includedOnlyMeshes = meshes;
+  }
 }

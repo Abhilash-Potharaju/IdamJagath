@@ -205,4 +205,5 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - `import_charminar_skfb.py`: **planar decimation** (DISSOLVE 1.5°, keeps flat architecture exact; the old 35% collapse decimation tore the arches/roof undersides) + triangulate + consistent normals → 71.7k tris, 5.1 MB GLB.
   - `charminarMaterial()`: smooth cream lime plaster (`painted_plaster_wall`, tint 0.98/0.90/0.76, subtler bump) instead of the stone-embedded texture (dark blotches); **double-sided** so one-sided source faces can't show through; weathering map kept (strength 0.7).
   - Verified from the user's viewpoint: arch solid, no holes or sheets, no errors.
+- User: Charminar structure "looks perfect now". **Colour toward the real monument:** albedo tint → warm beige lime stucco (0.90/0.82/0.68), plus 4 warm **floodlights** (`charminarFloodlights()` in Beauty.ts: SpotLights #ffcf8a at the base aiming up at each face, lighting only the monument meshes), like its real night lighting. Verified from the plaza corner; no errors.
 
