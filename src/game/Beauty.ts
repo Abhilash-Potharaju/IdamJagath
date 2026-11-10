@@ -131,20 +131,25 @@ export async function placeBeautyProps(scene: Scene, _level: Level): Promise<voi
  * (contact shadows + grime/rain streaks) on the first UV set. Tinted toward the monument's ivory stucco.
  */
 export function charminarMaterial(scene: Scene): PBRMaterial {
-  const m = pbr(scene, "plaster_stone_wall_01");
-  m.albedoColor = new Color3(1.18, 1.12, 1.04); // lift toward the monument's pale ivory stucco
+  // Smooth lime plaster (Poly Haven `painted_plaster_wall`, CC0) tinted to the monument's warm cream stucco.
+  // The earlier stone-embedded texture read as dark holes/blotches under the red lighting.
+  const m = pbr(scene, "painted_plaster_wall");
+  m.albedoColor = new Color3(0.98, 0.9, 0.76);
   for (const t of [m.albedoTexture, m.bumpTexture, m.metallicTexture]) {
     if (!t) continue;
     const tx = t as Texture;
     tx.coordinatesIndex = 1;
-    tx.uScale = tx.vScale = 0.6; // UV1 is 1 tile per 2.5 m; this makes it ~4 m so the embedded stones read subtler
+    tx.uScale = tx.vScale = 0.8;
   }
-  if (m.bumpTexture) m.bumpTexture.level = 0.7;
+  if (m.bumpTexture) m.bumpTexture.level = 0.45;
+  m.backFaceCulling = false; // the source model has some one-sided faces; never let them read as see-through holes
+  m.twoSidedLighting = true;
+  // Baked weathering (contact shadows + soft grime) gives depth to arches, balconies and recesses
   const weather = new Texture(`${BASE}textures/charminar/charminar_weathering_2k.jpg`, scene, false, false);
   weather.coordinatesIndex = 0;
   m.ambientTexture = weather;
-  m.ambientTextureStrength = 0.85;
+  m.ambientTextureStrength = 0.7;
   m.useAmbientInGrayScale = true;
-  m.ambientTextureImpactOnAnalyticalLights = 0.65; // weathering also darkens under lamps/moonlight, not just sky light
+  m.ambientTextureImpactOnAnalyticalLights = 0.5;
   return m;
 }

@@ -13,6 +13,7 @@ Steps: drop the display plinth -> join -> centre + scale so the footprint matche
 16 m gray-box (minaret outer edges ~17.6 m) -> decimate -> UV unwrap -> bake ambient occlusion
 -> composite AO over a limestone colour into one 2K texture -> export GLB.
 """
+import math
 import os
 import sys
 
@@ -76,10 +77,20 @@ bm.from_mesh(obj.data)
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.002)
 bm.to_mesh(obj.data)
 bm.free()
+# Planar decimation: merges only coplanar faces, so flat architecture keeps its exact shape (the old "collapse"
+# decimation at 35% tore arches and roof undersides into ragged hanging sheets and holes).
 dec = obj.modifiers.new("dec", "DECIMATE")
-dec.ratio = DECIMATE_RATIO
-dec.use_collapse_triangulate = True
+dec.decimate_type = "DISSOLVE"
+dec.angle_limit = math.radians(1.5)
+dec.delimit = {"NORMAL"}
 bpy.ops.object.modifier_apply(modifier=dec.name)
+tri = obj.modifiers.new("tri", "TRIANGULATE")
+bpy.ops.object.modifier_apply(modifier=tri.name)
+# Consistent outward normals (some source faces were flipped and rendered see-through with backface culling)
+bpy.ops.object.mode_set(mode="EDIT")
+bpy.ops.mesh.select_all(action="SELECT")
+bpy.ops.mesh.normals_make_consistent(inside=False)
+bpy.ops.object.mode_set(mode="OBJECT")
 bpy.ops.object.shade_auto_smooth(angle=0.6) if hasattr(bpy.ops.object, "shade_auto_smooth") else None
 
 # 3) UV unwrap for the AO bake
