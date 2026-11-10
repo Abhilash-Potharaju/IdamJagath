@@ -226,4 +226,5 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - Regression: meshes/holders/lights/enemies/credits as before, collisions, damage (40→20), full mission → MISSION COMPLETE, no errors, build OK.
   - Left in code for Phase 3: fx/Fleet runtime-drawn sprites (PNG copies exist), billboard animation, some feel/animation constants, classic-look surface rules.
   - **Next: Phase 2** (level shell rebuilt as a Blender scene) and **Phase 3** (core/engine split, fixed timestep, seeded RNG, unit tests).
+- **User playtested Phase 1: "everything works perfectly".** Paused here (2026-11-10). Dev server stopped. Resume: `npm run dev`. Next: refactor Phase 2 (level shell as a Blender scene) + Phase 3 (core/engine split, fixed timestep, seeded RNG, unit tests).
 
