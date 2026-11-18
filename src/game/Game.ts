@@ -5,6 +5,7 @@ import type { LevelAnchors } from "../core/ports";
 import { GAMEPLAY } from "../data/gameplay";
 import { Level } from "./Level";
 import { dressLevel } from "./Dressing";
+import { fillCollisionPockets } from "./Props";
 import { applyBeautyMaterials } from "./Beauty";
 import { Environment } from "./Environment";
 import { applyResolution, graphicsSettings, setupGraphics, type GraphicsHandles, fpsCounter } from "./Graphics";
@@ -108,6 +109,7 @@ export class Game {
     this.hud.setHealth(this.world.player.health);
     this.env.restrictPointLights();
     this.ready.then(() => this.env.restrictPointLights());
+    this.ready.then(() => fillCollisionPockets(this.scene)); // no player-sized gaps between props and walls
 
     document.addEventListener("pointerlockchange", () => {
       if (!this.input.locked && this.running) { this.running = false; this.onPause(); }

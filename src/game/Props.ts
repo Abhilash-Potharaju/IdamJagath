@@ -83,3 +83,52 @@ export function makeSolid(p: Placed, shrink = 0.92): Mesh | null {
   markWorld(box); // blocks line of sight
   return box;
 }
+
+/**
+ * Close gaps narrower than the player between a solid prop and a wall: such pockets let the player wedge in and get
+ * stuck (e.g. a lamp post 0.6 m from a wall). Adds an invisible filler collider spanning the gap. Run once after all
+ * props are placed.
+ */
+export function fillCollisionPockets(scene: Scene, playerDiameter = 0.8, margin = 0.15): number {
+  const solids: { mn: Vector3; mx: Vector3 }[] = [];
+  const walls: { mn: Vector3; mx: Vector3 }[] = [];
+  for (const m of scene.meshes) {
+    if (!m.checkCollisions || !m.isEnabled() || m.isDisposed()) continue;
+    m.computeWorldMatrix(true);
+    const b = m.getBoundingInfo().boundingBox;
+    const mn = b.minimumWorld.clone(), mx = b.maximumWorld.clone();
+    if (mx.y - mn.y < 0.3) continue; // floors
+    if (m.name === "prop-solid") solids.push({ mn, mx });
+    else if (m.metadata?.world) walls.push({ mn, mx });
+  }
+  const gapMax = playerDiameter + margin;
+  let added = 0;
+  const filler = (x0: number, x1: number, z0: number, z1: number, h: number) => {
+    const box = MeshBuilder.CreateBox("pocket-filler", { width: x1 - x0, height: h, depth: z1 - z0 }, scene);
+    box.position.set((x0 + x1) / 2, h / 2, (z0 + z1) / 2);
+    box.isVisible = false; box.isPickable = false; box.checkCollisions = true;
+    markWorld(box); // so the physics depenetration safety net also pushes bodies out of fillers
+    added++;
+  };
+  for (const s of solids) {
+    const h = Math.min(2.2, s.mx.y);
+    for (const w of walls) {
+      const overlapZ = Math.min(s.mx.z, w.mx.z) - Math.max(s.mn.z, w.mn.z);
+      const overlapX = Math.min(s.mx.x, w.mx.x) - Math.max(s.mn.x, w.mn.x);
+      if (overlapZ > 0) {
+        // Extend 0.3 m past the prop (within the wall) so rotated prop corners can't leave a notch to catch on
+        const z0 = Math.max(s.mn.z - 0.3, w.mn.z), z1 = Math.min(s.mx.z + 0.3, w.mx.z);
+        const gapR = w.mn.x - s.mx.x, gapL = s.mn.x - w.mx.x;
+        if (gapR > 0.001 && gapR < gapMax) filler(s.mx.x, w.mn.x, z0, z1, h);
+        if (gapL > 0.001 && gapL < gapMax) filler(w.mx.x, s.mn.x, z0, z1, h);
+      }
+      if (overlapX > 0) {
+        const x0 = Math.max(s.mn.x - 0.3, w.mn.x), x1 = Math.min(s.mx.x + 0.3, w.mx.x);
+        const gapF = w.mn.z - s.mx.z, gapB = s.mn.z - w.mx.z;
+        if (gapF > 0.001 && gapF < gapMax) filler(x0, x1, s.mx.z, w.mn.z, h);
+        if (gapB > 0.001 && gapB < gapMax) filler(x0, x1, w.mx.z, s.mn.z, h);
+      }
+    }
+  }
+  return added;
+}
