@@ -191,7 +191,7 @@ export class Game {
     const frameDt = Math.min(this.engine.getDeltaTime() / 1000, 0.05);
     let alpha = 1;
     if (this.running) {
-      if (this.input.framePressed("KeyM")) this.hud.message(this.audio.toggleMute() ? "Sound on" : "Sound off", 1.2);
+      if (this.input.frameAction("mute")) this.hud.message(this.audio.toggleMute() ? "Sound on" : "Sound off", 1.2);
       alpha = this.clock.advance(Math.min(this.engine.getDeltaTime() / 1000, 0.25), (dt) => { if (this.running) this.step(dt); });
       this.renderViews(alpha, frameDt);
     } else {

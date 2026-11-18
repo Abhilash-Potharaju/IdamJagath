@@ -1,3 +1,4 @@
+import { ACTIONS, codeLabel, getBindings, resetBindings, setBinding, type Action } from "../engine/babylon/bindings";
 import { renderCredits } from "../credits";
 import { getSettings, resetSettings, updateSettings, type QualityPreset, type Settings } from "./settings";
 
@@ -45,12 +46,6 @@ const TIPS = [
 
 const BRIEFING = "Hyderabad has fallen. Alien conversion pylons in the old city are turning captives into monsters. " +
   "Destroy the three pylons, free the captives held at the Charminar, and get back to the extraction point.";
-
-const CONTROLS: [string, string][] = [
-  ["W A S D  /  Arrow keys", "Move"], ["Mouse", "Look / aim"], ["Left click", "Fire"], ["Right click (hold)", "Zoom / aim down sights"],
-  ["1  /  2  /  Wheel  /  Q", "Switch weapon (Q = last used)"], ["R", "Reload"], ["Shift", "Sprint"], ["Space", "Jump"],
-  ["C  /  Left Ctrl", "Crouch · while sprinting: slide"], ["M", "Mute"], ["F", "FPS counter"], ["Esc", "Pause"],
-];
 
 const h = (html: string): HTMLElement => {
   const t = document.createElement("template");
@@ -260,10 +255,57 @@ export class Menus {
     const s = h(`
       <section class="screen screen-controls">
         <h2 class="screen-title">Controls</h2>
-        <div class="keymap">${CONTROLS.map(([k, a]) => `<div class="km-row"><span class="keys">${k.split("  /  ").map((x) => `<kbd>${x}</kbd>`).join('<i>/</i>')}</span><span class="act">${a}</span></div>`).join("")}</div>
+        <p class="bind-hint">Click a slot, then press a key or mouse button (side buttons work). Esc cancels, Delete clears.</p>
+        <div class="bindmap"></div>
+        <div class="bind-fixed"><kbd>Mouse wheel</kbd> switch weapon · <kbd>Esc</kbd> pause · <kbd>F</kbd> FPS counter</div>
+        <button class="menu-btn subtle" data-nav id="bind-reset">Reset to defaults</button>
         ${this.backButton()}
       </section>`);
-    s.querySelector("#back")!.addEventListener("click", () => this.backTo());
+    const map = s.querySelector(".bindmap") as HTMLElement;
+    const render = () => {
+      const b = getBindings();
+      map.innerHTML = ACTIONS.map((a) => `<div class="bind-row"><span class="act">${a.label}</span>` +
+        ([0, 1] as const).map((i) => `<button class="bind-slot" data-nav data-action="${a.id}" data-slot="${i}">${codeLabel(b[a.id][i])}</button>`).join("") +
+        `</div>`).join("");
+    };
+    render();
+    let capturing: HTMLButtonElement | null = null;
+    const stop = () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("mousedown", onMouse, true);
+      window.removeEventListener("contextmenu", block, true);
+      window.removeEventListener("auxclick", block, true);
+      capturing = null;
+    };
+    const assign = (code: string | null) => {
+      if (!capturing) return;
+      setBinding(capturing.dataset.action as Action, Number(capturing.dataset.slot) as 0 | 1, code);
+      stop(); render();
+    };
+    const block = (e: Event) => { e.preventDefault(); e.stopPropagation(); };
+    const onKey = (e: KeyboardEvent) => {
+      block(e);
+      if (e.code === "Escape") { stop(); render(); return; }
+      assign(e.code === "Delete" || e.code === "Backspace" ? null : e.code);
+    };
+    const onMouse = (e: MouseEvent) => { block(e); assign(`Mouse${e.button}`); };
+    map.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest(".bind-slot") as HTMLButtonElement | null;
+      if (!btn || capturing) return;
+      e.stopPropagation();
+      capturing = btn;
+      btn.textContent = "Press a key or button…";
+      btn.classList.add("capturing");
+      // Listen on the next tick so this click doesn't bind "Left click" immediately
+      setTimeout(() => {
+        window.addEventListener("keydown", onKey, true);
+        window.addEventListener("mousedown", onMouse, true);
+        window.addEventListener("contextmenu", block, true);
+        window.addEventListener("auxclick", block, true);
+      }, 0);
+    });
+    s.querySelector("#bind-reset")!.addEventListener("click", () => { resetBindings(); render(); });
+    s.querySelector("#back")!.addEventListener("click", () => { stop(); this.backTo(); });
     this.mount(s, "sub");
   }
 

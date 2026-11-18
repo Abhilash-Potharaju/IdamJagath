@@ -193,3 +193,15 @@ select option { color: #111; }
   .screen-end .stats { grid-template-columns: repeat(3, 1fr); }
   .menu-btn { min-width: 220px; font-size: 19px; }
 }
+/* Controls rebinding */
+.bind-hint { opacity: .7; font-size: 13px; margin: -4px 0 12px; }
+.bindmap { display: grid; gap: 6px; max-height: 52vh; overflow-y: auto; padding-right: 6px; margin-bottom: 12px; }
+.bind-row { display: grid; grid-template-columns: 1fr 160px 160px; gap: 8px; align-items: center; }
+.bind-row .act { font-size: 14px; }
+.bind-slot { font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 6px; cursor: pointer; color: var(--text);
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
+.bind-slot:hover, .bind-slot:focus { border-color: var(--accent); outline: none; }
+.bind-slot.capturing { border-color: var(--accent); background: rgba(255,138,61,.18); animation: bindpulse 1s ease-in-out infinite; }
+@keyframes bindpulse { 50% { background: rgba(255,138,61,.06); } }
+.bind-fixed { font-size: 12px; opacity: .65; margin-bottom: 10px; }
+

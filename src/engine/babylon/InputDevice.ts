@@ -1,4 +1,5 @@
 import type { InputSnapshot } from "../../core/ports";
+import { getBindings, type Action } from "./bindings";
 
 /**
  * Keyboard + mouse (pointer lock) → core InputSnapshot actions. Two clocks:
@@ -33,15 +34,20 @@ export class InputDevice {
       if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault();
     });
     window.addEventListener("keyup", (e) => this.keys.delete(e.code));
+    // Mouse buttons are tracked like keys ("Mouse0".."Mouse4") so any action can be bound to any button.
     window.addEventListener("mousedown", (e) => {
       if (!this.locked) return;
-      if (e.button === 0) this.mouseDown = true;
-      if (e.button === 2) this.aimDown = true;
+      const code = `Mouse${e.button}`;
+      if (!this.keys.has(code)) { this.stepPressed.add(code); this.framePressedSet.add(code); }
+      this.keys.add(code);
+      if (e.button >= 3) e.preventDefault(); // side buttons: don't navigate back/forward
     });
     window.addEventListener("mouseup", (e) => {
-      if (e.button === 0) this.mouseDown = false;
-      if (e.button === 2) this.aimDown = false;
+      this.keys.delete(`Mouse${e.button}`);
+      if (e.button >= 3) e.preventDefault();
     });
+    // Chrome navigates on the side buttons' auxclick/mouseup; block it while playing
+    window.addEventListener("auxclick", (e) => { if (e.button >= 3) e.preventDefault(); });
     window.addEventListener("wheel", (e) => {
       if (this.locked && e.deltaY !== 0) this.wheel += Math.sign(e.deltaY);
     }, { passive: true });
@@ -68,23 +74,38 @@ export class InputDevice {
   }
 
   /** Snapshot for one simulation step; resets the per-step edges and deltas. */
+  /** Is an action held (any of its bindings)? */
+  held(a: Action): boolean {
+    const [b0, b1] = getBindings()[a];
+    return (!!b0 && this.keys.has(b0)) || (!!b1 && this.keys.has(b1));
+  }
+
+  private pressedIn(set: Set<string>, a: Action): boolean {
+    const [b0, b1] = getBindings()[a];
+    return (!!b0 && set.has(b0)) || (!!b1 && set.has(b1));
+  }
+
+  /** Did an action go down since the last render frame (UI-level actions such as mute)? */
+  frameAction(a: Action): boolean { return this.pressedIn(this.framePressedSet, a); }
+
   consume(): InputSnapshot {
-    const k = this.keys, p = this.stepPressed;
+    const p = this.stepPressed;
+    // mouseDown/aimDown remain as test/automation overrides (scripted tests set them directly)
     const snap: InputSnapshot = {
-      forward: k.has("KeyW") || k.has("ArrowUp"),
-      back: k.has("KeyS") || k.has("ArrowDown"),
-      left: k.has("KeyA") || k.has("ArrowLeft"),
-      right: k.has("KeyD") || k.has("ArrowRight"),
-      sprint: k.has("ShiftLeft") || k.has("ShiftRight"),
-      crouch: k.has("KeyC") || k.has("ControlLeft"),
-      crouchPressed: p.has("KeyC") || p.has("ControlLeft"),
-      jumpPressed: p.has("Space"),
-      fire: this.mouseDown,
-      aim: this.aimDown,
-      reloadPressed: p.has("KeyR"),
-      weapon1Pressed: p.has("Digit1"),
-      weapon2Pressed: p.has("Digit2"),
-      weaponLastPressed: p.has("KeyQ"),
+      forward: this.held("forward"),
+      back: this.held("back"),
+      left: this.held("left"),
+      right: this.held("right"),
+      sprint: this.held("sprint"),
+      crouch: this.held("crouch"),
+      crouchPressed: this.pressedIn(p, "crouch"),
+      jumpPressed: this.pressedIn(p, "jump"),
+      fire: this.mouseDown || this.held("fire"),
+      aim: this.aimDown || this.held("aim"),
+      reloadPressed: this.pressedIn(p, "reload"),
+      weapon1Pressed: this.pressedIn(p, "weapon1"),
+      weapon2Pressed: this.pressedIn(p, "weapon2"),
+      weaponLastPressed: this.pressedIn(p, "weaponLast"),
       wheel: this.wheel,
       lookDX: this.mouseDX,
       lookDY: this.mouseDY,
