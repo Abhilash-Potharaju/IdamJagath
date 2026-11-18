@@ -120,7 +120,7 @@ export class Game {
     const anchors: LevelAnchors = {
       playerSpawn: fromV3(L.playerSpawn), extraction: L.extraction, cageTrigger: L.cageTrigger, plazaEntryZ: L.plazaEntryZ,
       pylonSpots: L.pylonSpots.map(fromV3), healthSpots: L.healthSpots.map(fromV3), secretPickup: fromV3(L.secretPickup),
-      cageDoor: fromV3(L.cageDoor.position),
+      cageDoor: fromV3(L.cageDoor.position), climbEntry: L.climbEntry ? fromV3(L.climbEntry) : undefined,
     };
     this.world = new GameWorld({
       data: GAMEPLAY, level: anchors, physics: this.physics, seed: Number(params.get("seed") ?? 1) || 1,

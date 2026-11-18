@@ -84,14 +84,14 @@ export class MissionView {
       mat.emissiveColor = Color3.FromHexString("#ff1e1e");
       mat.diffuseColor = Color3.Black();
       const pylon = MeshBuilder.CreateCylinder("pylon", { diameterTop: 0.6, diameterBottom: 1.6, height: 4.5, tessellation: 6 }, s);
-      pylon.position.set(p.x, 2.25, p.z);
+      pylon.position.set(p.x, p.y + 2.25, p.z);
       pylon.material = mat;
       pylon.checkCollisions = true;
       const beam = MeshBuilder.CreateCylinder("beam", { diameter: 0.25, height: 80, tessellation: 6 }, s);
-      beam.position.set(p.x, 42, p.z);
+      beam.position.set(p.x, p.y + 42, p.z);
       beam.material = mat;
       beam.isPickable = false;
-      const light = new PointLight("pylonLight", new Vector3(p.x, 3, p.z), s);
+      const light = new PointLight("pylonLight", new Vector3(p.x, p.y + 3, p.z), s);
       light.diffuse = Color3.FromHexString("#ff2a1a");
       light.intensity = 1.2;
       light.range = 16;

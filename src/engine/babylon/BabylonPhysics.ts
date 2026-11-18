@@ -64,7 +64,7 @@ export class BabylonPhysics implements IPhysics {
       this.blockers = [];
       for (const mesh of this.scene.meshes) {
         if (!mesh.checkCollisions || !mesh.isEnabled() || mesh.isDisposed() || !isWorld(mesh)) continue;
-        if (/minaret|ground|street|alley|slab/i.test(mesh.name)) continue; // round or flat: AABB isn't the shape
+        if (/minaret|ground|street|alley|slab|^COL_|ch-roof|ch-parapet/i.test(mesh.name)) continue; // + stair proxies and the roof (walk-on surfaces) // round or flat: AABB isn't the shape
         mesh.computeWorldMatrix(true);
         const b = mesh.getBoundingInfo().boundingBox;
         if (b.maximumWorld.y - b.minimumWorld.y < 0.3) continue;

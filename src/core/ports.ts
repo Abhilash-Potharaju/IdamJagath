@@ -84,5 +84,7 @@ export interface LevelAnchors {
   pylonSpots: Vec3[];
   healthSpots: Vec3[];
   secretPickup: Vec3;
+  /** Optional: where to guide the player when the objective is high up (e.g. the Charminar stair door). */
+  climbEntry?: Vec3;
   cageDoor: Vec3;
 }

@@ -27,7 +27,7 @@ OUT_GLB = os.path.join(ROOT, "public/models/charminar_skfb.glb")
 OUT_PREVIEW = os.path.join(ROOT, "tools/blender/previews/charminar_skfb.png")
 OUT_BLEND = os.path.join(ROOT, "tools/blender/src/charminar_skfb.blend")
 
-FOOTPRINT = 17.6      # metres across the base (minaret outer edges), matches Level.ts colliders
+FOOTPRINT = 24.64     # metres across the base (minaret outer edges): 1.4x the original 17.6 (closer to the real ~20 m / 56 m monument)
 DECIMATE_RATIO = 0.35  # ~113k -> ~40k tris
 TEX = 4096  # thousands of small ornament islands: 2K left each wall only a few pixels of weathering
 LIMESTONE = (0.80, 0.73, 0.62)  # warm granite/lime plaster
@@ -92,6 +92,37 @@ bpy.ops.mesh.select_all(action="SELECT")
 bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.mode_set(mode="OBJECT")
 
+# 2b) Climbable leg: cut a doorway into the south face of the south-west leg and a shaft/hatch (cylinder) through its
+#     hollow interior and the roof, so tools/blender/build_charminar_stairs.py's spiral stair fits inside.
+#     Blender coords: model centred at origin, +Z up, game south = Blender +Y. Shaft centre = leg centre.
+K_SCALE = FOOTPRINT / 17.6
+SHAFT = (-6.97, 6.97)          # leg centre (game x -6.97, z 79.03 once placed at (0,0,86))
+SHAFT_R = 1.9                  # shaft radius (stair outer edge 1.75)
+DOOR_W, DOOR_H = 1.4, 2.5
+cutters = []
+bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=SHAFT_R, depth=24.5, location=(SHAFT[0], SHAFT[1], 0.05 + 24.5 / 2))
+cutters.append(bpy.context.active_object)
+bpy.ops.mesh.primitive_cube_add(size=1, location=(SHAFT[0], 9.3, DOOR_H / 2 - 0.05))
+door = bpy.context.active_object
+door.scale = (DOOR_W, 2.6, DOOR_H + 0.1)
+cutters.append(door)
+for c in cutters:
+    bpy.context.view_layer.objects.active = obj
+    mod = obj.modifiers.new("cut", "BOOLEAN")
+    mod.operation = "DIFFERENCE"
+    mod.object = c
+    mod.solver = "EXACT"
+    try:
+        bpy.ops.object.select_all(action="DESELECT"); obj.select_set(True)
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    except Exception as e:  # fall back to the fast solver if exact fails on this non-manifold shell
+        print("BOOLEAN exact failed, trying fast:", e)
+        mod.solver = "FAST"
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.data.objects.remove(c, do_unlink=True)
+bpy.ops.object.select_all(action="DESELECT"); obj.select_set(True); bpy.context.view_layer.objects.active = obj
+print(f"CLIMB cut door+shaft tris={sum(len(p.vertices) - 2 for p in obj.data.polygons)}")
+
 # (Opening the sealed gallery niches by rule was tried and reverted: the planar-decimated walls are long sliver
 #  triangles, so niche vs wall can't be separated cleanly. Needs hand modelling; see PROJECT.md.)
 bpy.ops.object.shade_auto_smooth(angle=0.6) if hasattr(bpy.ops.object, "shade_auto_smooth") else None
@@ -153,11 +184,12 @@ def node_math(op, a=None, b=None, v1=None):
     if v1 is not None: n.inputs[1].default_value = v1
     return n
 ax = node_math("ABSOLUTE", sep.outputs["X"]); ay = node_math("ABSOLUTE", sep.outputs["Y"])
-dx = node_math("SUBTRACT", ax.outputs[0], v1=7.5); dy = node_math("SUBTRACT", ay.outputs[0], v1=7.5)
+K = FOOTPRINT / 17.6  # minaret axes/radii scale with the monument
+dx = node_math("SUBTRACT", ax.outputs[0], v1=7.3 * K); dy = node_math("SUBTRACT", ay.outputs[0], v1=7.3 * K)
 dx2 = node_math("MULTIPLY", dx.outputs[0], dx.outputs[0]); dy2 = node_math("MULTIPLY", dy.outputs[0], dy.outputs[0])
 dist = node_math("SQRT", node_math("ADD", dx2.outputs[0], dy2.outputs[0]).outputs[0])
 mask = gt.nodes.new("ShaderNodeMapRange"); gt.links.new(dist.outputs[0], mask.inputs["Value"])
-mask.inputs["From Min"].default_value = 1.2; mask.inputs["From Max"].default_value = 2.8
+mask.inputs["From Min"].default_value = 1.2 * K; mask.inputs["From Max"].default_value = 2.8 * K
 mask.inputs["To Min"].default_value = 1.0; mask.inputs["To Max"].default_value = 0.0
 # Long dark rain/soot streaks running down the minarets
 smap = gt.nodes.new("ShaderNodeMapping"); smap.inputs["Scale"].default_value = (9.0, 9.0, 0.22)

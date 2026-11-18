@@ -50,7 +50,7 @@ Run as parallel agents, each with separate file ownership.
 - Presence: glowing eyes, breathing, positional footsteps and growls; wet organic materials with a subtle red alien emissive.
 - Keep AI, stats, tells and counters in `src/core` and `data/gameplay/enemies.json`; only the views (`src/engine/babylon/EnemyViews.ts`, `monsterModels.ts`) change.
 
-### D. Bigger, climbable Charminar (feasible, about 1–2 days)
+### D. ~~Bigger, climbable Charminar~~ DONE 2026-11-18 (pylon on the roof). Next: playtest the look of the door, shaft and roof.
 - **Scale up** toward real proportions (real: about 20 m square, about 56 m minarets; ours is about 30 m tall). Adjust plaza colliders and placements.
 - **Climbable:** a doorway in one or more legs; a **spiral staircase inside** (visible steps plus an invisible smooth ramp collider, the industry-standard approach); a walkable roof terrace and upper gallery with railing colliders. The legs must be rebuilt hollow in Blender (the Sketchfab model's legs are solid).
 - Update the collisions, the lightmap bake, `data/level/level1.json` anchors and the stuck test.

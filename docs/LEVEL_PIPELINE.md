@@ -63,3 +63,10 @@ are there for engines that import collision meshes by naming convention.
 `src/game/Level.ts` fetches the GLB with a **module-level `await`** (`loadLevelGeometry()` in `src/data/level.ts`,
 an engine-neutral GLB reader), so the geometry is in memory before `Game` constructs the `Level` and `build()` stays
 synchronous. `level.shellSource` is `"glb"` or `"code"`. `?codelevel` forces the code-built fallback for A/B checks.
+
+## Climbable Charminar (2026-11-18)
+- `tools/blender/import_charminar_skfb.py`: FOOTPRINT 24.64 (1.4×; ≈26.4 m wide incl. minarets, 42.6 m tall, roof terrace at y 20.58). Boolean-cuts a doorway (1.4 × 2.5 m) and a Ø3.8 m shaft + roof hatch into one leg. **Note: the glTF import mirrors Blender X, so Blender (-6.97, 6.97) is the game's SOUTH-EAST leg (game x +6.97, z 79.03).**
+- `tools/blender/build_charminar_stairs.py` → `public/models/charminar_stairs.glb`: 114 stone steps (0.18 m rise, 7.48 turns, pitch 2.75 m), column, door frame, hatch rail + invisible `COL_*` proxies (smooth helical ramp, shaft ring with door gap, hatch railing). Loaded by `Level.placeCharminarStairs()` (COL_* → collision only; 2 torch lights).
+- `data/level/level1.json`: `ch-*` colliders rebuilt (hollow SE leg `ch-shaft-*` with door gap, roof split around the hatch `ch-roof-a..d`, `ch-parapet` ×4, minarets Ø3.8 at (±10.4, 75.6/96.4)); `anchors.pylons[2]` = roof centre `[0, 20.58, 86]`; `anchors.climbEntry` = door (waypoint guides there while the target pylon is high above the player).
+- After changing the Charminar: run import → stairs → `build_level.py` → `bake_level.py`, copy the new raw GLBs into `art/_public_backup/models/` and run `node tools/assets/optimize_glb.mjs public/models/charminar_skfb.glb public/models/charminar_stairs.glb`.
+- Tests: `tools/dev/climb_test.js` (`climbTest()`, `descendTest()`), `stuckTestClimb()` in `tools/dev/stuck_test.js`.

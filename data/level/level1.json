@@ -46,9 +46,9 @@
     72
    ],
    [
-    -18,
     0,
-    100
+    20.58,
+    86
    ]
   ],
   "healthPacks": [
@@ -72,6 +72,11 @@
    7.3,
    0,
    18
+  ],
+  "climbEntry": [
+   6.97,
+   0,
+   75.6
   ]
  },
  "blocks": [
@@ -739,14 +744,14 @@
    "name": "ch-pillar",
    "shape": "box",
    "min": [
-    -8,
+    -9.34,
     0,
-    78
+    76.66
    ],
    "max": [
-    -3,
-    12,
-    83
+    -4.6,
+    11.5,
+    81.4
    ],
    "color": "#c9b8a0",
    "tags": [
@@ -757,14 +762,14 @@
    "name": "ch-pillar",
    "shape": "box",
    "min": [
-    3,
+    4.6,
     0,
-    78
+    90.6
    ],
    "max": [
-    8,
-    12,
-    83
+    9.34,
+    11.5,
+    95.34
    ],
    "color": "#c9b8a0",
    "tags": [
@@ -775,14 +780,14 @@
    "name": "ch-pillar",
    "shape": "box",
    "min": [
-    -8,
+    -9.34,
     0,
-    89
+    90.6
    ],
    "max": [
-    -3,
-    12,
-    94
+    -4.6,
+    11.5,
+    95.34
    ],
    "color": "#c9b8a0",
    "tags": [
@@ -790,17 +795,17 @@
    ]
   },
   {
-   "name": "ch-pillar",
+   "name": "ch-shaft-w",
    "shape": "box",
    "min": [
-    3,
+    8.87,
     0,
-    89
+    76.66
    ],
    "max": [
-    8,
-    12,
-    94
+    9.34,
+    11.5,
+    81.4
    ],
    "color": "#c9b8a0",
    "tags": [
@@ -808,17 +813,107 @@
    ]
   },
   {
-   "name": "ch-roof",
+   "name": "ch-shaft-e",
    "shape": "box",
    "min": [
-    -8,
-    12,
-    78
+    4.6,
+    0,
+    76.66
    ],
    "max": [
-    8,
-    14,
-    94
+    5.07,
+    11.5,
+    81.4
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-shaft-n",
+   "shape": "box",
+   "min": [
+    5.07,
+    0,
+    80.93
+   ],
+   "max": [
+    8.87,
+    11.5,
+    81.4
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-shaft-s1",
+   "shape": "box",
+   "min": [
+    7.67,
+    0,
+    76.66
+   ],
+   "max": [
+    8.87,
+    11.5,
+    77.13
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-shaft-s2",
+   "shape": "box",
+   "min": [
+    5.07,
+    0,
+    76.66
+   ],
+   "max": [
+    6.27,
+    11.5,
+    77.13
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-shaft-lintel",
+   "shape": "box",
+   "min": [
+    6.27,
+    2.5,
+    76.66
+   ],
+   "max": [
+    7.67,
+    11.5,
+    77.13
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-roof-a",
+   "shape": "box",
+   "min": [
+    -9.34,
+    11.5,
+    80.93
+   ],
+   "max": [
+    9.34,
+    20.58,
+    95.34
    ],
    "color": "#a8987f",
    "tags": [
@@ -826,17 +921,125 @@
    ]
   },
   {
-   "name": "ch-upper",
+   "name": "ch-roof-b",
    "shape": "box",
    "min": [
-    -6,
-    14,
-    80
+    -9.34,
+    11.5,
+    76.66
    ],
    "max": [
-    6,
-    18,
-    92
+    5.07,
+    20.58,
+    80.93
+   ],
+   "color": "#a8987f",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-roof-c",
+   "shape": "box",
+   "min": [
+    8.87,
+    11.5,
+    76.66
+   ],
+   "max": [
+    9.34,
+    20.58,
+    80.93
+   ],
+   "color": "#a8987f",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-roof-d",
+   "shape": "box",
+   "min": [
+    5.07,
+    11.5,
+    76.66
+   ],
+   "max": [
+    8.87,
+    20.58,
+    77.13
+   ],
+   "color": "#a8987f",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-parapet",
+   "shape": "box",
+   "min": [
+    -9.34,
+    20.58,
+    76.66
+   ],
+   "max": [
+    9.34,
+    21.6,
+    77.0
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-parapet",
+   "shape": "box",
+   "min": [
+    -9.34,
+    20.58,
+    95.0
+   ],
+   "max": [
+    9.34,
+    21.6,
+    95.34
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-parapet",
+   "shape": "box",
+   "min": [
+    9.0,
+    20.58,
+    76.66
+   ],
+   "max": [
+    9.34,
+    21.6,
+    95.34
+   ],
+   "color": "#c9b8a0",
+   "tags": [
+    "charminar"
+   ]
+  },
+  {
+   "name": "ch-parapet",
+   "shape": "box",
+   "min": [
+    -9.34,
+    20.58,
+    76.66
+   ],
+   "max": [
+    -9.0,
+    21.6,
+    95.34
    ],
    "color": "#c9b8a0",
    "tags": [
@@ -847,12 +1050,12 @@
    "name": "ch-minaret",
    "shape": "cylinder",
    "center": [
-    -7.5,
-    17,
-    78.5
+    10.4,
+    21.3,
+    75.6
    ],
-   "diameter": 2.6,
-   "height": 34,
+   "diameter": 3.8,
+   "height": 42.6,
    "segments": 12,
    "color": "#c9b8a0",
    "tags": [
@@ -863,12 +1066,12 @@
    "name": "ch-minaret",
    "shape": "cylinder",
    "center": [
-    7.5,
-    17,
-    78.5
+    -10.4,
+    21.3,
+    75.6
    ],
-   "diameter": 2.6,
-   "height": 34,
+   "diameter": 3.8,
+   "height": 42.6,
    "segments": 12,
    "color": "#c9b8a0",
    "tags": [
@@ -879,12 +1082,12 @@
    "name": "ch-minaret",
    "shape": "cylinder",
    "center": [
-    -7.5,
-    17,
-    93.5
+    10.4,
+    21.3,
+    96.4
    ],
-   "diameter": 2.6,
-   "height": 34,
+   "diameter": 3.8,
+   "height": 42.6,
    "segments": 12,
    "color": "#c9b8a0",
    "tags": [
@@ -895,12 +1098,12 @@
    "name": "ch-minaret",
    "shape": "cylinder",
    "center": [
-    7.5,
-    17,
-    93.5
+    -10.4,
+    21.3,
+    96.4
    ],
-   "diameter": 2.6,
-   "height": 34,
+   "diameter": 3.8,
+   "height": 42.6,
    "segments": 12,
    "color": "#c9b8a0",
    "tags": [
@@ -1617,9 +1820,9 @@
   {
    "model": "props/car_burned_pair.glb",
    "pos": [
-    -12.6,
+    -16,
     0,
-    99.5
+    103
    ],
    "yaw": 1.2,
    "solid": "fitted",
@@ -1628,9 +1831,9 @@
     {
      "type": "smoulder",
      "pos": [
-      -12.6,
+      -16,
       0.9,
-      99.5
+      103
      ]
     }
    ]
@@ -2375,9 +2578,9 @@
  "scorchDecals": [
   {
    "pos": [
-    -12.6,
+    -16,
     0.018,
-    99.5
+    103
    ],
    "size": 5.5,
    "yaw": 0.6
@@ -2521,9 +2724,9 @@
   },
   {
    "pos": [
-    11,
+    15,
     0.02,
-    96
+    99
    ],
    "size": [
     4.76,

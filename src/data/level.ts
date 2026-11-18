@@ -57,7 +57,7 @@ export interface LevelData {
   name: string;
   anchors: {
     playerSpawn: V3; extraction: Rect; plazaEntryZ: number; cageTrigger: Rect;
-    pylons: V3[]; healthPacks: V3[]; secretPickup: V3;
+    pylons: V3[]; healthPacks: V3[]; secretPickup: V3; climbEntry?: V3;
   };
   blocks: BlockData[];
   beautySurfaces: { environment: { hdri: string; intensity: number }; rules: SurfaceRule[] };

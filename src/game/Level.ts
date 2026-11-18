@@ -1,4 +1,4 @@
-import { Color3, type Material, PBRMaterial, Mesh, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, VertexBuffer, VertexData } from "@babylonjs/core";
+import { Color3, type Material, PBRMaterial, Mesh, MeshBuilder, PointLight, Scene, StandardMaterial, Texture, Vector3, VertexBuffer, VertexData } from "@babylonjs/core";
 import { markWorld } from "./types";
 import { makeSolid, place } from "./Props";
 import { BEAUTY, charminarMaterial } from "./Beauty";
@@ -62,6 +62,7 @@ export class Level {
   readonly pylonSpots: Vector3[];
   readonly healthSpots: Vector3[];
   readonly secretPickup: Vector3;
+  readonly climbEntry?: Vector3;
   cageDoor!: Mesh;
   secretWall!: Mesh;
 
@@ -81,6 +82,7 @@ export class Level {
     this.pylonSpots = a.pylons.map(v3);
     this.healthSpots = a.healthPacks.map(v3);
     this.secretPickup = v3(a.secretPickup);
+    this.climbEntry = a.climbEntry ? v3(a.climbEntry) : undefined;
   }
 
   /** Where the shell geometry came from: the portable GLB, or generated in code from the JSON (fallback). */
@@ -197,6 +199,32 @@ export class Level {
    * Place every prop listed in the level data. Gray boxes a model replaces turn invisible but keep their
    * collisions (players/enemies) and world tag (line of sight).
    */
+  /**
+   * Spiral staircase inside the Charminar's south-west leg (tools/blender/build_charminar_stairs.py): visible stone
+   * steps + door frame + hatch rail, and invisible COL_* collision proxies (a smooth helical ramp, the shaft ring, the
+   * roof-hatch railing). Two warm torches light the shaft.
+   */
+  private async placeCharminarStairs(): Promise<void> {
+    const p = await place(this.scene, "charminar_stairs.glb", new Vector3(0, 0, 86));
+    for (const m of p.meshes) {
+      if (m.name.startsWith("COL_")) {
+        m.isVisible = false;
+        m.isPickable = false;
+        m.checkCollisions = true;
+        markWorld(m);
+      } else {
+        m.checkCollisions = false; // visual steps: the smooth ramp proxy is the walk surface
+      }
+    }
+    const shaft = new Vector3(6.97, 0, 79.03); // south-east leg (glTF import mirrors Blender X)
+    for (const h of [4.5, 13]) {
+      const torch = new PointLight("stair-torch", shaft.add(new Vector3(0, h, 0)), this.scene);
+      torch.diffuse = Color3.FromHexString("#ffb060");
+      torch.intensity = 1.1;
+      torch.range = 7;
+    }
+  }
+
   async decorate(): Promise<void> {
     const params = new URLSearchParams(location.search);
     const jobs: Promise<unknown>[] = [];
@@ -205,6 +233,7 @@ export class Level {
       if (p.mode === "classic" && BEAUTY) continue;
       jobs.push(this.placeProp(p, params));
     }
+    jobs.push(this.placeCharminarStairs());
     const results = await Promise.allSettled(jobs);
     const failed = results.filter((r) => r.status === "rejected");
     if (failed.length) console.warn(`[decorate] ${failed.length} model placements failed`, failed);

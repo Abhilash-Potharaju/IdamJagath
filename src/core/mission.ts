@@ -41,7 +41,7 @@ export class Mission {
     this.host = host;
     this.M = data;
     this.L = level;
-    this.pylons = level.pylonSpots.map((p, index) => ({ index, pos: new Vec3(p.x, 3, p.z), hp: data.pylon.hp, alive: true }));
+    this.pylons = level.pylonSpots.map((p, index) => ({ index, pos: new Vec3(p.x, p.y + 3, p.z), hp: data.pylon.hp, alive: true }));
     this.pickups = [
       ...level.healthSpots.map((p, i) => ({ index: i, kind: "health" as const, pos: new Vec3(p.x, 0.8, p.z), taken: false })),
       { index: level.healthSpots.length, kind: "secret" as const, pos: new Vec3(level.secretPickup.x, 1, level.secretPickup.z), taken: false },
@@ -166,6 +166,9 @@ export class Mission {
         const d = Vec3.distanceSquared(t.pos, p);
         if (d < bestD) { bestD = d; best = t.pos; }
       }
+      // A pylon high up (the Charminar roof): guide to the stair door first while the player is still below
+      const entry = this.L.climbEntry;
+      if (best && entry && best.y > 6 && p.y < best.y - 6) return new Vec3(entry.x, 1.5, entry.z);
       return best;
     }
     if (this.phase === "cage") return new Vec3(0, 1.5, 103);
