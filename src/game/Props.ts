@@ -1,6 +1,19 @@
 import { LoadAssetContainerAsync, MeshBuilder, type AbstractMesh, type AssetContainer, type Mesh, type Scene, TransformNode, Vector3 } from "@babylonjs/core";
 import { markWorld } from "./types";
 import "@babylonjs/loaders/glTF";
+import { MeshoptCompression } from "@babylonjs/core/Meshes/Compression/meshoptCompression";
+
+/**
+ * Compressed-asset decoders, hosted locally (works offline and on game portals; no Babylon CDN dependency).
+ * Models are meshopt-compressed (EXT_meshopt_compression) with WebP textures (EXT_texture_webp, decoded natively by
+ * the browser). See docs/ASSETS.md and tools/assets/optimize_glb.mjs.
+ */
+export function configureDecoders(): void {
+  MeshoptCompression.Configuration = {
+    decoder: { url: new URL(`${import.meta.env.BASE_URL}decoders/meshopt_decoder.js`, location.href).href },
+  };
+}
+configureDecoders();
 
 /**
  * Loads .glb models from /public/models once and places copies in the level.

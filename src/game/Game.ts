@@ -18,16 +18,20 @@ import { MissionView } from "../engine/babylon/MissionView";
 import { HUD } from "../engine/babylon/HUD";
 import { Audio, type SoundName } from "../engine/babylon/Audio";
 import { fromV3, type DamageFn } from "../engine/babylon/convert";
+import { effective, BASE_FOV_DEG, type Settings } from "../ui/settings";
 
 const params = new URLSearchParams(location.search);
-/** ?bob=0..1 scales head-bob (accessibility); default 1. */
-const BOB = Math.max(0, Math.min(1, Number(params.get("bob") ?? "1") || (params.get("bob") === "0" ? 0 : 1)));
+/** Head-bob scale from Settings (?bob=0..1 overrides for testing). */
+const BOB = effective().bob;
 
 /**
  * Composition root: builds the Babylon engine/scene and the level presentation, the engine adapter (physics, input,
  * camera, views, audio, HUD) and the portable core GameWorld, then runs the fixed-timestep loop:
  *   render frame → FixedStep.advance(frameDt) → N × [input.consume → world.step(SIM_DT)] → views.render(alpha) → scene.render
  */
+/** ?shot= dev/test mode: no pointer lock is possible headless, so lock changes must never pause the sim. */
+const TEST_MODE = new URLSearchParams(location.search).has("shot");
+
 export class Game {
   readonly engine: Engine;
   readonly scene: Scene;
@@ -51,10 +55,45 @@ export class Game {
   private running = false;
   private readonly onEnd: (title: string, body: string) => void;
   private readonly onPause: () => void;
+  /** Player settings in effect (look, FOV, bob, volumes, hints); updated live via applySettings(). */
+  private ui: Settings = effective();
+  private settled = new Map<Promise<unknown>, boolean>();
 
   /** Model loads in flight; resolves when they're all done (failures fall back to gray boxes). */
   get ready(): Promise<void> {
     return Promise.allSettled(this.modelJobs).then(() => undefined);
+  }
+
+  /** Asset-loading progress for the loading screen: settled vs total model/texture jobs. */
+  get loadProgress(): { done: number; total: number } {
+    for (const p of this.modelJobs) {
+      if (!this.settled.has(p)) {
+        this.settled.set(p, false);
+        p.then(() => this.settled.set(p, true), () => this.settled.set(p, true));
+      }
+    }
+    let done = 0;
+    for (const v of this.settled.values()) if (v) done++;
+    return { done, total: this.settled.size };
+  }
+
+  get isRunning(): boolean { return this.running; }
+
+  /** Apply player settings live (look multipliers, FOV, bob, volumes, hints). */
+  applySettings(s: Settings): void {
+    this.ui = s;
+    this.audio.setVolumes({ master: s.master, sfx: s.sfx, music: s.music });
+    // The core and weapon view take bob at construction and expose no setter; adjust the field directly.
+    (this.world.player as unknown as { bobScale: number }).bobScale = s.bob;
+    (this.weapon as unknown as { bobScale: number }).bobScale = s.bob;
+  }
+
+  /** Pause: freeze the simulation (the fixed-step clock resets on resume, so there's no time jump). */
+  pause(): void {
+    if (!this.running || this.world.isOver) return;
+    this.running = false;
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.onPause();
   }
 
   constructor(canvas: HTMLCanvasElement, onEnd: (title: string, body: string) => void, onPause: () => void) {
@@ -112,8 +151,10 @@ export class Game {
     this.ready.then(() => fillCollisionPockets(this.scene)); // no player-sized gaps between props and walls
 
     document.addEventListener("pointerlockchange", () => {
-      if (!this.input.locked && this.running) { this.running = false; this.onPause(); }
+      if (!this.input.locked && this.running && !TEST_MODE) { this.running = false; this.onPause(); }
     });
+    // Esc also pauses when the pointer isn't locked (Esc while locked is handled by the browser releasing the lock)
+    window.addEventListener("keydown", (e) => { if (e.code === "Escape" && this.running && !this.input.locked) this.pause(); });
     window.addEventListener("resize", () => this.engine.resize());
     this.engine.runRenderLoop(() => this.frame());
     this.exposeForTests();
@@ -124,7 +165,8 @@ export class Game {
     const ev = this.world.events, hud = this.hud, audio = this.audio;
     ev.on("sound", (e) => audio.play(e.name as SoundName, e.at));
     ev.on("message", (e) => hud.message(e.text, e.seconds));
-    ev.on("hint", (e) => hud.message(e.text, 3.5));
+    ev.on("hint", (e) => { if (this.ui.showHints) hud.message(e.text, 3.5); });
+    hud.onObjectiveCue = () => audio.play("switch");
     ev.on("hurt", (e) => hud.onHurt(e));
     ev.on("damageFlash", () => hud.damageFlash());
     ev.on("footstep", (e) => audio.play(e.sprint ? "footstep_run" : "footstep"));
@@ -136,6 +178,10 @@ export class Game {
   /** One fixed simulation step. */
   private step(dt: number): void {
     const input = this.input.consume();
+    // Look settings (adapter-side, so the core keeps one sensitivity): multiplier, zoom multiplier, invert Y
+    const look = this.ui.sensitivity * (1 + (this.ui.zoomSensitivity - 1) * this.world.player.zoom);
+    input.lookDX *= look;
+    input.lookDY *= look * (this.ui.invertY ? -1 : 1);
     this.enemyViews.snap(); // bodies exactly at core positions for this step's raycasts
     this.world.step(dt, input);
     this.enemyViews.record();
@@ -158,6 +204,9 @@ export class Game {
 
   private renderViews(alpha: number, dt: number): void {
     this.camera.apply(alpha);
+    this.camera.camera.fov *= this.ui.fov / BASE_FOV_DEG; // FOV setting scales the core's FOV (zoom/sprint keep working)
+    const g = this.world.arsenal.gun;
+    this.hud.setWeaponState(g.ammo, g.spec.mag, g.reloading > 0 ? 1 - g.reloading / g.spec.reloadTime : null);
     this.audio.update(this.camera.camera.position, this.world.player.yaw);
     this.weapon.update(dt, this.input.frameDX, this.input.frameDY);
     this.enemyViews.render(alpha, dt);
@@ -228,6 +277,9 @@ export class Game {
       simulate: (s: number) => self.simulate(s),
       debugStart: (x: number, z: number, yaw: number, pitch?: number, y?: number) => self.debugStart(x, z, yaw, pitch, y),
       start: () => self.start(),
+      pause: () => self.pause(),
+      get running() { return self.isRunning; },
+      get loadProgress() { return self.loadProgress; },
       get isOver() { return self.isOver; },
       stateHash: () => w.stateHash(),
     };

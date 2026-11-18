@@ -61,7 +61,10 @@ export class InputDevice {
   }
 
   lock(): void {
-    this.canvas.requestPointerLock();
+    // Newer browsers return a promise that rejects when lock is refused (e.g. re-locking right after Esc).
+    // The "pointerlockerror" event still fires, and the UI handles it, so just swallow the rejection.
+    const p = this.canvas.requestPointerLock() as unknown as Promise<void> | undefined;
+    if (p && typeof p.catch === "function") p.catch(() => { /* handled via pointerlockerror */ });
   }
 
   /** Snapshot for one simulation step; resets the per-step edges and deltas. */

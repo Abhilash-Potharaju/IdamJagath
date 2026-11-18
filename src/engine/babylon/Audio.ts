@@ -416,6 +416,21 @@ export class Audio {
   private voices = new Map<SoundName, number>();
   private listener = { x: 0, y: 0, z: 0, yaw: 0 };
   muted = false;
+  // Volume buses (Settings): master × (sfx | music). Base levels below are the mix the game was tuned with.
+  private vol = { master: 1, sfx: 1, music: 1 };
+  private ambGain: GainNode | null = null;
+  private static readonly BASE = { master: 0.9, sfx: 0.8, music: 0.11 };
+
+  /** Set bus volumes 0..1 (applied smoothly; safe before the audio context exists). */
+  setVolumes(v: { master: number; sfx: number; music: number }): void {
+    this.vol = { master: v.master, sfx: v.sfx, music: v.music };
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    this.master.gain.setTargetAtTime(this.muted ? 0 : Audio.BASE.master * v.master, t, 0.05);
+    this.sfx.gain.setTargetAtTime(Audio.BASE.sfx * v.sfx, t, 0.05);
+    this.ambGain?.gain.setTargetAtTime(Audio.BASE.music * v.music, t, 0.2);
+  }
 
   /** Play a sound; `at` = world position for distance falloff/panning (omit for UI/player sounds). */
   play(name: SoundName, at?: { x: number; y: number; z: number }): void {
@@ -485,7 +500,7 @@ export class Audio {
   /** Toggle mute; returns true when sound is now ON. */
   toggleMute(): boolean {
     this.muted = !this.muted;
-    if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, this.ctx.currentTime, 0.03);
+    if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : Audio.BASE.master * this.vol.master, this.ctx.currentTime, 0.03);
     return !this.muted;
   }
 
@@ -508,11 +523,11 @@ export class Audio {
     limiter.release.value = 0.15;
     limiter.connect(ctx.destination);
     this.master = ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.9;
+    this.master.gain.value = this.muted ? 0 : Audio.BASE.master * this.vol.master;
     this.master.connect(limiter);
 
     this.sfx = ctx.createGain();
-    this.sfx.gain.value = 0.8;
+    this.sfx.gain.value = Audio.BASE.sfx * this.vol.sfx;
     this.sfx.connect(this.master);
 
     // Short dark reverb (generated impulse) for a sense of stone streets
@@ -579,8 +594,9 @@ export class Audio {
     const ctx = this.ctx!;
     const amb = ctx.createGain();
     amb.gain.setValueAtTime(0, ctx.currentTime);
-    amb.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 3);
+    amb.gain.linearRampToValueAtTime(Audio.BASE.music * this.vol.music, ctx.currentTime + 3);
     amb.connect(this.master);
+    this.ambGain = amb;
     if (this.ambienceBuffer) {
       const src = ctx.createBufferSource();
       src.buffer = this.ambienceBuffer;

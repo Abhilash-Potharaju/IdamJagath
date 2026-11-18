@@ -14,6 +14,8 @@ const ws = new WebSocket(targets.find((t) => t.type === "page").webSocketDebugge
 let id = 0; const pend = new Map(); ws.addEventListener("message", (m) => { const d = JSON.parse(m.data); if (pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } });
 const send = (method, params) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async (e) => { const r = await send("Runtime.evaluate", { expression: e, awaitPromise: true, returnByValue: true }); return r.result?.exceptionDetails ? "EXC: " + (r.result.exceptionDetails.exception?.description || "").slice(0, 400) : r.result?.result?.value; };
+// PRELOAD=<js>: run a script before the page's own scripts (e.g. enlarge the resource-timing buffer), then reload
+if (process.env.PRELOAD) { await send("Page.enable", {}); await send("Page.addScriptToEvaluateOnNewDocument", { source: process.env.PRELOAD }); await send("Page.reload", {}); await wait(4000); }
 for (let i = 0; i < 80; i++) { if (await ev("!!window.__game")) break; await wait(250); }
 for (const s of steps) {
   if (s.startsWith("SHOT:")) { await wait(300); const r = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(join(OUT, s.slice(5) + ".png"), Buffer.from(r.result.data, "base64")); console.log("saved", s.slice(5)); continue; }

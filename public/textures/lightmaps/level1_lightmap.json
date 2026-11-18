@@ -1,0 +1,12 @@
+{
+ "image": "level1_lightmap.jpg",
+ "uv": 1,
+ "source_hash": "c9a92ff6",
+ "encoding": "gamma2.2",
+ "level": 2.0,
+ "lref": 0.7314,
+ "contrast": 0.65,
+ "size": 2048,
+ "samples": 64,
+ "note": "multiply (shadow-map) lightmap: value/level stored gamma-encoded; 1.0 = open ground under the sky"
+}

@@ -1,4 +1,4 @@
-import { Color3, PBRMaterial, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3, VertexData } from "@babylonjs/core";
+import { Color3, type Material, PBRMaterial, Mesh, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, VertexBuffer, VertexData } from "@babylonjs/core";
 import { markWorld } from "./types";
 import { makeSolid, place } from "./Props";
 import { BEAUTY, charminarMaterial } from "./Beauty";
@@ -15,6 +15,8 @@ import { LEVEL1, levelGeometryHash, loadLevelGeometry, type BlockGeometry, type 
  * ?codelevel forces that fallback for A/B comparisons.
  */
 const FORCE_CODE_LEVEL = new URLSearchParams(location.search).has("codelevel");
+/** Read at load time (the UI may later rewrite the URL). */
+const NO_LIGHTMAP = new URLSearchParams(location.search).has("nolightmap");
 const LEVEL_SHELL: LevelGeometry | null = FORCE_CODE_LEVEL ? null : await loadLevelGeometry(`${import.meta.env.BASE_URL}models/level/level1.glb`);
 
 /** +1/-1: winding convention of Babylon's own box (first triangle's geometric normal vs its vertex normal). */
@@ -115,6 +117,49 @@ export class Level {
     this.secretWall = this.byId.get("secret-wall")!;
     this.cageDoor = this.byId.get("cage-door")!;
   }
+
+  /**
+   * Baked global-illumination lightmap for the GLB shell (tools/blender/bake_level.py): bounce light, contact
+   * occlusion in corners and warm lamp/fire pools, applied as a MULTIPLY over all real-time lighting on UV1
+   * (1.0 = unchanged, <1 darker, up to `level` brighter). Only for the GLB shell whose source_hash matches the bake.
+   * `?nolightmap` disables it for A/B comparison. Call after the shell's final materials are assigned.
+   */
+  async applyLightmap(): Promise<void> {
+    if (this.shellSource !== "glb" || !LEVEL_SHELL || NO_LIGHTMAP) return;
+    const base = `${import.meta.env.BASE_URL}textures/lightmaps/`;
+    let meta: { image: string; level: number; uv: number; source_hash: string };
+    try {
+      meta = await (await fetch(`${base}level1_lightmap.json`)).json();
+    } catch {
+      return; // no bake: lighting stays fully real-time
+    }
+    if (meta.source_hash !== LEVEL_SHELL.sourceHash) {
+      console.warn("[level] lightmap was baked for a different shell; skipping. Re-run tools/blender/bake_level.py");
+      return;
+    }
+    // invertY=false: the shell's UVs are glTF UVs (v = 0 at the top of the image), and the baker writes rows top-down
+    const tex = new Texture(base + meta.image, this.scene, false, false);
+    tex.coordinatesIndex = meta.uv;
+    tex.level = meta.level;
+    tex.gammaSpace = true; // values are stored gamma-encoded (better precision in the darks)
+    tex.wrapU = tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+    const clones = new Map<Material, Material>();
+    for (const m of this.world) {
+      if (m.metadata?.levelBlock === undefined || !m.material || !m.isVerticesDataPresent(VertexBuffer.UV2Kind)) continue;
+      let c = clones.get(m.material);
+      if (!c) {
+        // Clone per original material so meshes outside the shell (no UV1) never get a lightmap
+        c = m.material.clone(`${m.material.name}-lm`) as Material;
+        const lm = c as PBRMaterial | StandardMaterial;
+        lm.lightmapTexture = tex;
+        lm.useLightmapAsShadowmap = true;
+        clones.set(m.material, c);
+      }
+      m.material = c;
+    }
+    this.lightmapped = clones.size > 0;
+  }
+  lightmapped = false;
 
   /** The loaded shell GLB, if it exists and was built from this exact block layout. */
   private usableShell(): LevelGeometry | null {

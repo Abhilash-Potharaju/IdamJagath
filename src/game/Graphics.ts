@@ -1,3 +1,4 @@
+import { effective, updateSettings } from "../ui/settings";
 import {
   type AbstractMesh, CascadedShadowGenerator, type Camera, Constants, type DefaultRenderingPipeline, type DirectionalLight,
   type Engine, SSAO2RenderingPipeline, SSRRenderingPipeline, type Scene, ShadowGenerator,
@@ -28,7 +29,8 @@ export interface GraphicsSettings {
 
 const params = new URLSearchParams(location.search);
 const q = params.get("quality");
-const quality: Quality = q === "low" || q === "medium" || q === "high" || q === "ultra" ? q : "high";
+// URL ?quality wins (testing); otherwise the saved Settings preset (applied on reload)
+const quality: Quality = q === "low" || q === "medium" || q === "high" || q === "ultra" ? q : effective().quality;
 const retro = params.has("retro");
 const flag = (name: string, dflt: boolean): boolean => (params.has(name) ? params.get(name) !== "0" : dflt);
 
@@ -217,16 +219,26 @@ export function setupGraphics(engine: Engine, scene: Scene, camera: Camera, moon
   return h;
 }
 
-/** Small FPS counter (top-right). F toggles it. Helps diagnose stutter/ghosting on real hardware. */
+/** Small FPS counter (top-right). F toggles it (and saves the choice); Settings can toggle it too. */
+let fpsEl: HTMLDivElement | null = null;
+
+export function setFpsVisible(on: boolean): void {
+  if (fpsEl) fpsEl.style.display = on ? "block" : "none";
+}
+
 export function fpsCounter(engine: Engine): void {
   const el = document.createElement("div");
+  el.id = "fps";
   el.style.cssText = "position:fixed;top:10px;right:12px;z-index:50;font:600 12px/1 system-ui,sans-serif;" +
     "color:#cfe;background:rgba(0,0,0,.45);padding:4px 7px;border-radius:4px;pointer-events:none;";
   document.body.appendChild(el);
-  let shown = !new URLSearchParams(location.search).has("nofps");
-  el.style.display = shown ? "block" : "none";
+  fpsEl = el;
+  setFpsVisible(effective().showFps);
   window.addEventListener("keydown", (e) => {
-    if (e.code === "KeyF") { shown = !shown; el.style.display = shown ? "block" : "none"; }
+    if (e.code !== "KeyF" || document.activeElement instanceof HTMLInputElement) return;
+    const on = el.style.display === "none";
+    updateSettings({ showFps: on }); // listeners (main.ts) call setFpsVisible
+    setFpsVisible(on);
   });
   setInterval(() => {
     const fps = engine.getFps();

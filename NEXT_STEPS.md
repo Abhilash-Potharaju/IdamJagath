@@ -14,7 +14,7 @@ Then tell Claude: *"Resume Idam Jagath from NEXT_STEPS.md."*
 
 Last committed state: `cc92c03` (stuck-in-corners fix). Approved visual baseline tag: `baseline-2026-11-10`.
 
-## 1. In-flight work: integrate first
+## 1. ~~In-flight work~~ DONE (integrated 2026-11-18; see PROJECT.md). Remaining open items from it are in section 3.
 Three polish agents were running when this was written. Their work is on disk but **not committed**.
 
 | Workstream | Files it touched | Status when written |
@@ -57,6 +57,8 @@ Run as parallel agents, each with separate file ownership.
 - **⚠️ Decision needed from the owner: what's on top?** (a) a sniper vantage point for the Warden fight, (b) a mission objective (a pylon or the captives), or (c) the secret.
 
 ## 3. Other backlog
+- Lightmap: dark line at the lane start (z≈0); facades lack UV1 (not lightmapped); a 4K final bake; review light balance with `?nolightmap`.
+- UI: restart/quit reload the page; key rebinding; head-bob setter in core.
 - **JS bundle is about 11 MB** (all of Babylon imported). Switch to tree-shakeable deep imports (`@babylonjs/core/...`) or chunking to shrink it.
 - Gallery/minaret window openings are sealed niches in the Charminar model (would need hand modelling). This could be combined with D.
 - Replace the remaining runtime-drawn sprites in `fx.ts` / `Fleet.ts` with the exported PNGs (copies exist in `public/textures/generated/`).

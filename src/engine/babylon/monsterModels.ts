@@ -3,6 +3,7 @@ import {
   type Scene, StandardMaterial, TransformNode, Vector3,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
+import "../../game/Props"; // configures the locally hosted meshopt decoder before any model loads
 import { setTarget, type DamageFn } from "./convert";
 
 /**

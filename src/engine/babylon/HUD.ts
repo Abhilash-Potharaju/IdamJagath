@@ -30,6 +30,19 @@ export class HUD {
   private lastBeat = 0;
   /** Called on each low-health heartbeat (wired to audio). */
   onHeartbeat: () => void = () => {};
+  /** Called when the objective text changes (wired to a short UI sound cue). */
+  onObjectiveCue: () => void = () => {};
+  // Polish: tweened numbers, reload ring, low-ammo warning
+  private hpShown = 100;
+  private hpTarget = 100;
+  private ammoShown = -1;
+  private ammoTarget = -1;
+  private ammoText = "";
+  private ring = document.getElementById("reload-ring-fill") as SVGCircleElement | null;
+  private ringWrap = document.getElementById("reload-ring");
+  private ammoWarn = document.getElementById("ammo-warn");
+  private ammoPanel = $("ammo");
+  private lastTick = performance.now();
 
   constructor() {
     // Damage direction arcs around the crosshair
@@ -42,6 +55,26 @@ export class HUD {
     // Low-health pulse vignette
     this.lowHp = el("position:absolute;inset:0;pointer-events:none;opacity:0;" +
       "box-shadow:inset 0 0 220px 70px rgba(150,0,0,.85);", this.root);
+    const tick = () => { this.tickNumbers(); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+
+  /** Smoothly count displayed numbers toward their targets (drops are fast, refills/heals count up). */
+  private tickNumbers(): void {
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - this.lastTick) / 1000);
+    this.lastTick = now;
+    if (Math.abs(this.hpShown - this.hpTarget) > 0.01) {
+      const rate = this.hpTarget < this.hpShown ? 14 : 5; // damage reads instantly-ish, healing ticks up
+      this.hpShown += (this.hpTarget - this.hpShown) * Math.min(1, dt * rate);
+      if (Math.abs(this.hpShown - this.hpTarget) < 0.5) this.hpShown = this.hpTarget;
+      this.healthVal.textContent = String(Math.max(0, Math.ceil(this.hpShown)));
+    }
+    if (this.ammoTarget >= 0 && this.ammoShown !== this.ammoTarget) {
+      if (this.ammoTarget < this.ammoShown || this.ammoShown < 0) this.ammoShown = this.ammoTarget; // shots: instant
+      else this.ammoShown = Math.min(this.ammoTarget, this.ammoShown + Math.max(1, Math.round(dt * 60))); // refill: count up
+      this.ammoVal.textContent = String(this.ammoShown);
+    }
   }
 
   /** Damage-direction arc toward the attacker (core "hurt" event). */
@@ -65,11 +98,19 @@ export class HUD {
   }
 
   setObjective(text: string): void {
+    if (text === this.objective.textContent) return;
+    const changed = !!this.objective.textContent;
     this.objective.textContent = text;
+    if (changed) {
+      this.objective.classList.remove("objective-in");
+      void this.objective.offsetWidth; // restart the slide-in animation
+      this.objective.classList.add("objective-in");
+      this.onObjectiveCue();
+    }
   }
 
   setHealth(hp: number): void {
-    this.healthVal.textContent = String(Math.max(0, Math.ceil(hp)));
+    this.hpTarget = Math.max(0, hp); // displayed value tweens toward this (tickNumbers)
     this.health.classList.toggle("low", hp <= 30);
     // Low health: pulsing red vignette + heartbeat
     const now = performance.now() / 1000;
@@ -83,7 +124,31 @@ export class HUD {
   }
 
   setAmmo(text: string): void {
-    this.ammoVal.textContent = text;
+    this.ammoText = text;
+    const n = Number(text);
+    if (text !== "" && Number.isFinite(n)) {
+      this.ammoTarget = n;
+      if (this.ammoShown < 0) { this.ammoShown = n; this.ammoVal.textContent = text; }
+    } else {
+      this.ammoTarget = -1;
+      this.ammoShown = -1;
+      this.ammoVal.textContent = text;
+    }
+  }
+
+  /** Reload progress ring around the crosshair (0..1) and low-ammo warning. `reload` = null when not reloading. */
+  setWeaponState(ammo: number, mag: number, reload: number | null): void {
+    if (this.ring && this.ringWrap) {
+      const on = reload !== null;
+      this.ringWrap.classList.toggle("on", on);
+      const C = 2 * Math.PI * 16; // r = 16 in the SVG
+      this.ring.style.strokeDasharray = String(C);
+      this.ring.style.strokeDashoffset = String(C * (1 - (on ? reload! : 0)));
+    }
+    const low = reload === null && mag > 1 && ammo <= Math.max(1, Math.ceil(mag * 0.25));
+    this.ammoPanel.classList.toggle("low", low);
+    this.ammoWarn?.classList.toggle("on", low);
+    void this.ammoText;
   }
 
   setWeapon(active: number, names: string[]): void {

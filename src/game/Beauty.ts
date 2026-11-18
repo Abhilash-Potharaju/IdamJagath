@@ -58,6 +58,7 @@ export function applyBeautyMaterials(scene: Scene, level: Level): void {
     m.material = rule.mats[rule.i++ % rule.mats.length];
     tileUVs(m, rule.tile, rule.tile);
   }
+  void level.applyLightmap(); // baked GI on the shell (after its final materials are set)
 }
 
 /**
