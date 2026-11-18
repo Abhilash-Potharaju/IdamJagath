@@ -243,4 +243,6 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - **Asset compression:** load size 49 → 21 MB (meshopt + WebP via glTF-Transform, HDRI 1K); local meshopt decoder; originals in `art/_public_backup/` (git-ignored); `npm run assets:optimize`. Open: the JS bundle is 11 MB (Babylon imported in full).
   - Lead fix: in `?shot` test mode, pointer-lock refusal no longer pauses the sim (headless can't lock).
   - Regression: tsc, 21 tests, build; stuck test 0/150 (explore); mission → MISSION COMPLETE end screen; no errors.
+- **Scope (ADS) view** (user: "bullets are going through the zoomed lens"): as zoom completes, the gun fades out and a DOM scope overlay fades in (round lens, dark tube, crosshair posts, red dot; HUD stays on top; crosshair hidden). While scoped: no muzzle-flash sprite, no smoke, tracers start 3 m out along the line of sight. Code: `WeaponView.updateScope()/buildScope()`.
+- User noted no visible change in gun sound: expected, recorded audio is the next round (Freesound key set). The lightmap is subtle; a stronger bake + facade lightmapping are pending.
 

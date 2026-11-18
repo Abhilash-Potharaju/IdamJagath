@@ -224,6 +224,49 @@ export class WeaponView {
       sprint * -0.55 + this.swayX * 2.5,
       -p.strafe * 0.035 * sw + this.kickRoll + rRoll + sprint * 0.3 + drop * 0.6,
     );
+    this.updateScope(z, g);
+  }
+
+  // ── Scope (ADS) view: as zoom completes, the gun fades out and a scope overlay fades in, so muzzle flash, smoke and
+  // tracers never pass "through the lens" (modern-shooter convention).
+  private scopeEl: HTMLElement | null = null;
+  private scopeK = 0;
+  private scopeAmount(): number { return this.scopeK; }
+
+  private updateScope(z: number, g: { mesh: { getChildMeshes(): { visibility: number }[]; visibility: number } }): void {
+    const k = Math.max(0, Math.min(1, (z - 0.55) / 0.35));
+    const smooth = k * k * (3 - 2 * k);
+    this.scopeK = smooth;
+    for (const m of [g.mesh, ...g.mesh.getChildMeshes()]) m.visibility = 1 - smooth;
+    if (!this.scopeEl) this.scopeEl = this.buildScope();
+    this.scopeEl.style.opacity = String(smooth);
+    this.scopeEl.style.display = smooth > 0.001 ? "block" : "none";
+    const cross = document.getElementById("crosshair");
+    if (cross) cross.style.opacity = String(1 - smooth);
+  }
+
+  private buildScope(): HTMLElement {
+    const el = document.createElement("div");
+    el.id = "scope";
+    el.style.cssText = "position:fixed;inset:0;pointer-events:none;display:none;opacity:0;" +
+      // dark tube around a round lens, with a faint blue lens tint and soft edge
+      "background:radial-gradient(circle at 50% 50%, rgba(120,170,200,.06) 0, rgba(120,170,200,.04) 33vmin," +
+      " rgba(0,0,0,.92) 35vmin, #000 37vmin);";
+    const line = (css: string) => { const d = document.createElement("div"); d.style.cssText = "position:absolute;background:rgba(10,10,10,.85);" + css; el.appendChild(d); };
+    line("left:50%;top:calc(50% - 34vmin);width:2px;height:28vmin;margin-left:-1px;");          // top post
+    line("left:50%;top:calc(50% + 6vmin);width:3px;height:28vmin;margin-left:-1.5px;");          // bottom post
+    line("top:50%;left:calc(50% - 34vmin);height:2px;width:28vmin;margin-top:-1px;");            // left post
+    line("top:50%;left:calc(50% + 6vmin);height:2px;width:28vmin;margin-top:-1px;");             // right post
+    line("top:50%;left:calc(50% - 6vmin);height:1px;width:12vmin;background:rgba(10,10,10,.6);"); // fine centre lines
+    line("left:50%;top:calc(50% - 6vmin);width:1px;height:12vmin;background:rgba(10,10,10,.6);");
+    const dot = document.createElement("div");
+    dot.style.cssText = "position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;" +
+      "background:#ff3b2f;box-shadow:0 0 6px 2px rgba(255,40,30,.8);";
+    el.appendChild(dot);
+    // Insert before the HUD so health/ammo/objective stay drawn on top of the scope surround
+    const hud = document.getElementById("hud");
+    if (hud?.parentNode) hud.parentNode.insertBefore(el, hud); else document.body.appendChild(el);
+    return el;
   }
 
   private onShot(weapon: number, heavy: boolean): void {
@@ -235,7 +278,8 @@ export class WeaponView {
     this.kickRollV += (Math.random() - 0.5) * (heavy ? 5 : 1.6);
     this.light.diffuse = Color3.FromHexString(spec.flashColor);
     this.light.intensity = heavy ? 1.6 : 0.9;
-    g.flash.setEnabled(true);
+    const scoped = this.scopeAmount() > 0.4;
+    if (!scoped) g.flash.setEnabled(true); // no flash sprite in front of the scope lens
     g.flash.rotation.z = Math.random() * Math.PI * 2;
     g.flash.scaling.setAll((heavy ? 1.5 : 1) * (0.8 + Math.random() * 0.45));
     this.flashT = heavy ? 0.06 : 0.04;
@@ -247,7 +291,12 @@ export class WeaponView {
     g.mesh.computeWorldMatrix(true);
     g.flash.computeWorldMatrix(true);
     this.muzzle = g.flash.getAbsolutePosition().clone();
-    this.fx.muzzleSmoke(this.muzzle, camF.add(camU.scale(0.3)), heavy);
+    if (scoped) {
+      // Scoped: tracers start a few metres out along the line of sight, and no smoke puff in the lens
+      this.muzzle = cam.globalPosition.add(camF.scale(3)).add(camU.scale(-0.15));
+    } else {
+      this.fx.muzzleSmoke(this.muzzle, camF.add(camU.scale(0.3)), heavy);
+    }
     const port = g.mesh.getAbsolutePosition().add(camR.scale(0.03)).add(camU.scale(0.03)).add(camF.scale(0.05));
     this.fx.shell(port, camR.scale(1.8 + Math.random() * 0.8).add(camU.scale(1.6 + Math.random() * 0.8)).add(camF.scale(-0.4)), heavy);
     if (Math.random() < 0.5) window.setTimeout(() => this.audio.play("shell_drop"), 450 + Math.random() * 200);
