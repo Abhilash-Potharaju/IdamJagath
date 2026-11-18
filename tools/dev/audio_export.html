@@ -3,7 +3,7 @@
 <title>Audio export (dev)</title>
 <!-- Loads only the audio module (no game), so edits elsewhere can't hot-reload it mid-render. -->
 <script type="module">
-  import { Audio } from "/src/game/Audio.ts";
+  import { Audio } from "/src/engine/babylon/Audio.ts";
   window.__renderAudio = () => Audio.renderAll();
   window.__ready = true;
 </script>

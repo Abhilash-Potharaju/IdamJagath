@@ -132,3 +132,92 @@ export function validateLevel(raw: unknown): LevelData {
 }
 
 export const LEVEL1: LevelData = validateLevel(level1Json);
+
+// ───────────────────────── level shell geometry (GLB) ─────────────────────────
+// The gray-box shell is also a portable asset: tools/blender/build_level.py turns `blocks` into a Blender scene and
+// public/models/level/level1.glb. This reader is engine-neutral (fetch + DataView): it returns raw arrays that any
+// engine adapter can turn into meshes. glTF coordinates in that file are game coordinates (see docs/LEVEL_PIPELINE.md).
+
+export interface BlockGeometry {
+  blockIndex: number;
+  name: string;
+  /** Node translation = block centre (no rotation/scale on level nodes). */
+  translation: V3;
+  positions: Float32Array; normals: Float32Array; uv0?: Float32Array; uv1?: Float32Array;
+  /** Triangle indices in glTF (counter-clockwise, right-handed) order. */
+  indices: Uint32Array;
+}
+export interface LevelGeometry { sourceHash: string; blocks: Map<number, BlockGeometry>; colliders: Map<number, BlockGeometry> }
+
+const mmRound = (v: number) => Math.floor(v * 1000 + 0.5);
+/** Hash of block geometry fields; must match block_hash() in tools/blender/build_level.py. */
+export function levelGeometryHash(d: LevelData): string {
+  const parts = d.blocks.map((b) => {
+    const r = b as unknown as Record<string, unknown>;
+    const nums: number[] = [];
+    for (const k of ["min", "max", "center", "size"]) if (Array.isArray(r[k])) nums.push(...(r[k] as number[]).map(mmRound));
+    for (const k of ["diameter", "height", "segments"]) if (typeof r[k] === "number") nums.push(mmRound(r[k] as number));
+    return `${b.name}|${b.shape}|${nums.join(",")}`;
+  });
+  let h = 0x811c9dc5;
+  for (const byte of new TextEncoder().encode(parts.join(";"))) { h ^= byte; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, "0");
+}
+
+interface GltfJson {
+  scenes?: { extras?: { source_hash?: string } }[];
+  nodes: { name?: string; mesh?: number; translation?: number[]; rotation?: number[]; scale?: number[]; matrix?: number[]; children?: number[]; extras?: Record<string, unknown> }[];
+  meshes: { primitives: { attributes: Record<string, number>; indices?: number }[] }[];
+  accessors: { bufferView: number; byteOffset?: number; componentType: number; count: number; type: string }[];
+  bufferViews: { byteOffset?: number; byteLength: number; byteStride?: number }[];
+}
+
+/** Fetch and parse a level-shell GLB. Returns null on any problem (callers fall back to building from JSON). */
+export async function loadLevelGeometry(url: string): Promise<LevelGeometry | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x46546c67) throw new Error("not a GLB");
+    const jsonLen = dv.getUint32(12, true);
+    const gltf = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jsonLen))) as GltfJson;
+    const binStart = 20 + jsonLen + 8;
+    const SIZES: Record<string, number> = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+    const read = (ai: number): Float32Array | Uint32Array => {
+      const a = gltf.accessors[ai], bv = gltf.bufferViews[a.bufferView];
+      const n = a.count * SIZES[a.type], off = binStart + (bv.byteOffset ?? 0) + (a.byteOffset ?? 0);
+      if (bv.byteStride && bv.byteStride !== SIZES[a.type] * 4) throw new Error("interleaved buffers not supported");
+      if (a.componentType === 5126) return new Float32Array(buf.slice(off, off + n * 4));
+      if (a.componentType === 5125) return new Uint32Array(buf.slice(off, off + n * 4));
+      if (a.componentType === 5123) return Uint32Array.from(new Uint16Array(buf.slice(off, off + n * 2)));
+      if (a.componentType === 5121) return Uint32Array.from(new Uint8Array(buf.slice(off, off + n)));
+      throw new Error(`unsupported componentType ${a.componentType}`);
+    };
+    const out: LevelGeometry = { sourceHash: gltf.scenes?.[0]?.extras?.source_hash ?? "", blocks: new Map(), colliders: new Map() };
+    for (const node of gltf.nodes) {
+      if (node.mesh === undefined) continue;
+      if (node.rotation || node.scale || node.matrix || node.children) throw new Error(`level node ${node.name} has a non-translation transform`);
+      const ex = node.extras ?? {};
+      const collider = typeof ex.collider_for === "number";
+      const idx = (collider ? ex.collider_for : ex.block_index) as number | undefined;
+      if (typeof idx !== "number") continue;
+      const prims = gltf.meshes[node.mesh].primitives;
+      if (prims.length !== 1 || prims[0].indices === undefined) throw new Error(`level mesh ${node.name}: expected one indexed primitive`);
+      const at = prims[0].attributes;
+      const g: BlockGeometry = {
+        blockIndex: idx, name: (ex.block_name as string) ?? node.name ?? "",
+        translation: (node.translation ?? [0, 0, 0]) as V3,
+        positions: read(at.POSITION) as Float32Array, normals: read(at.NORMAL) as Float32Array,
+        uv0: at.TEXCOORD_0 !== undefined ? (read(at.TEXCOORD_0) as Float32Array) : undefined,
+        uv1: at.TEXCOORD_1 !== undefined ? (read(at.TEXCOORD_1) as Float32Array) : undefined,
+        indices: Uint32Array.from(read(prims[0].indices)),
+      };
+      (collider ? out.colliders : out.blocks).set(idx, g);
+    }
+    return out;
+  } catch (e) {
+    console.warn("[level] could not read level shell GLB; building blocks from JSON instead", e);
+    return null;
+  }
+}

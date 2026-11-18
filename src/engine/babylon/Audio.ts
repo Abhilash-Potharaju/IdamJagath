@@ -1,5 +1,3 @@
-import type { Vector3 } from "@babylonjs/core";
-import { Feel, Shake } from "./feel";
 
 /**
  * Every sound the game can request. This list is the contract between gameplay code and the audio system.
@@ -399,11 +397,7 @@ const VOLUME: Partial<Record<SoundName, number>> = {
   footstep: 0.32, footstep_run: 0.42, land: 0.6, heartbeat: 0.9, shell_drop: 0.25, impact_stone: 0.4, impact_flesh: 0.5, kill_confirm: 0.55,
 };
 
-/** Camera-shake trauma added when these sounds play (scaled by distance for positioned sounds). */
-const SHAKE: Partial<Record<SoundName, number>> = {
-  trishul_fire: 0.2, vajra_fire: 0.025, pylon_explode: 0.55, warden_land: 0.65, warden_impact: 0.45, warden_charge: 0.12,
-  cage_open: 0.15, warden_death: 0.4,
-};
+// (Camera shake that some sounds carry is gameplay-relevant (it moves the aim) and lives in the core: world.ts SOUND_SHAKE.)
 
 /**
  * Game audio. Plays the pre-rendered files in public/audio/ (see public/audio/manifest.json), through the same
@@ -423,20 +417,8 @@ export class Audio {
   private listener = { x: 0, y: 0, z: 0, yaw: 0 };
   muted = false;
 
-  constructor() {
-    Feel.on("footstep", (e) => this.play(e.sprint ? "footstep_run" : "footstep"));
-    Feel.on("land", (e) => { if (e.strength > 0.05) this.play("land"); });
-    Feel.on("heartbeat", () => this.play("heartbeat"));
-  }
-
   /** Play a sound; `at` = world position for distance falloff/panning (omit for UI/player sounds). */
-  play(name: SoundName, at?: Vector3): void {
-    const shake = SHAKE[name];
-    if (shake) {
-      let k = 1;
-      if (at) k = Math.max(0, 1 - Math.hypot(at.x - this.listener.x, at.y - this.listener.y, at.z - this.listener.z) / 40);
-      if (k > 0) Shake.add(shake * k);
-    }
+  play(name: SoundName, at?: { x: number; y: number; z: number }): void {
     const ctx = this.ctx;
     if (!ctx || this.muted || ctx.state !== "running") return;
     const n = this.voices.get(name) ?? 0;
@@ -487,7 +469,7 @@ export class Audio {
   }
 
   /** Called every frame with the listener (camera) position and yaw. */
-  update(listener: Vector3, yaw: number): void {
+  update(listener: { x: number; y: number; z: number }, yaw: number): void {
     this.listener.x = listener.x;
     this.listener.y = listener.y;
     this.listener.z = listener.z;

@@ -227,4 +227,10 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - Left in code for Phase 3: fx/Fleet runtime-drawn sprites (PNG copies exist), billboard animation, some feel/animation constants, classic-look surface rules.
   - **Next: Phase 2** (level shell rebuilt as a Blender scene) and **Phase 3** (core/engine split, fixed timestep, seeded RNG, unit tests).
 - **User playtested Phase 1: "everything works perfectly".** Paused here (2026-11-10). Dev server stopped. Resume: `npm run dev`. Next: refactor Phase 2 (level shell as a Blender scene) + Phase 3 (core/engine split, fixed timestep, seeded RNG, unit tests).
+### 2026-11-18
+- **PORTABILITY REFACTOR, Phases 2 + 3 done** (two parallel agents + lead integration):
+  - **Phase 2, level shell is a portable asset:** `tools/blender/build_level.py` builds `data/level/level1.json` → `tools/blender/src/level1.blend` → `public/models/level/level1.glb` (202 KB; 60 render blocks + 60 `COL_*` colliders; per-colour material slots; UV0 world-tiling + UV1 lightmap). `Level.ts` loads the GLB (fallback to code-built boxes on missing/stale file or `?codelevel`). All 64 world meshes match within 1 cm; screenshots pixel-identical. Docs: `docs/LEVEL_PIPELINE.md`.
+  - **Phase 3, portable core + engine adapter:** `src/core/` (≈1,350 lines, no Babylon/DOM): fixed 60 Hz timestep, seeded RNG, typed event bus, ports (`IPhysics`, `InputSnapshot`, `LevelAnchors`), entities (player, weapons, enemies), mission, `GameWorld` with `stateHash()`. `src/engine/babylon/`: physics, input, camera rig, weapon/enemy/mission views, HUD, audio, fx, monster models. `src/game/Game.ts` is the composition root. **21 Vitest unit tests** (`npm test`, no browser). Docs: `ARCHITECTURE.md`, `docs/PORTING.md`.
+  - Integration regression: tsc + 21 tests + build OK; level from GLB; collisions; mission pylons → cage → escape → won; no errors.
+  - Needs a real-GPU check: the fixed-timestep sim caps catch-up at 5 steps/frame (fine at normal FPS).
 

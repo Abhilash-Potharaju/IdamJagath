@@ -1,11 +1,31 @@
-import { Color3, PBRMaterial, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
+import { Color3, PBRMaterial, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3, VertexData } from "@babylonjs/core";
 import { markWorld } from "./types";
 import { makeSolid, place } from "./Props";
 import { BEAUTY, charminarMaterial } from "./Beauty";
 import { Surfaces } from "./Environment";
 import { burningCarFire } from "./Dressing";
 import { smoulder } from "./WarDressing";
-import { LEVEL1, type LevelData, type PropData } from "../data/level";
+import { LEVEL1, levelGeometryHash, loadLevelGeometry, type BlockGeometry, type LevelData, type LevelGeometry, type PropData } from "../data/level";
+
+/**
+ * The level SHELL comes from the portable asset public/models/level/level1.glb (built from level1.json by
+ * tools/blender/build_level.py). It is fetched with a module-level await, so the GLB is in memory before Game
+ * constructs the Level and build() can stay synchronous (no Game.ts changes). If the file is missing, unreadable or
+ * stale (its source_hash doesn't match the JSON), build() falls back to generating the same blocks in code.
+ * ?codelevel forces that fallback for A/B comparisons.
+ */
+const FORCE_CODE_LEVEL = new URLSearchParams(location.search).has("codelevel");
+const LEVEL_SHELL: LevelGeometry | null = FORCE_CODE_LEVEL ? null : await loadLevelGeometry(`${import.meta.env.BASE_URL}models/level/level1.glb`);
+
+/** +1/-1: winding convention of Babylon's own box (first triangle's geometric normal vs its vertex normal). */
+function windingSign(pos: ArrayLike<number>, nrm: ArrayLike<number>, idx: ArrayLike<number>, t = 0): number {
+  const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3;
+  const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2];
+  const vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+  const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+  return Math.sign(cx * nrm[a] + cy * nrm[a + 1] + cz * nrm[a + 2]) || 1;
+}
+const BABYLON_WINDING = (() => { const v = VertexData.CreateBox({ size: 1 }); return windingSign(v.positions!, v.normals!, v.indices!); })();
 
 /**
  * Level 1: "Charminar under occupation". All layout lives in data/level/level1.json (engine-neutral); this class
@@ -61,11 +81,20 @@ export class Level {
     this.secretPickup = v3(a.secretPickup);
   }
 
+  /** Where the shell geometry came from: the portable GLB, or generated in code from the JSON (fallback). */
+  shellSource: "glb" | "code" = "code";
+
   /** Build the gray-box blocks (collision, line of sight, and the classic look). */
   build(): void {
-    for (const b of this.data.blocks) {
+    const shell = this.usableShell();
+    this.shellSource = shell ? "glb" : "code";
+    this.data.blocks.forEach((b, i) => {
       let m: Mesh;
-      if (b.shape === "box") {
+      const g = shell?.blocks.get(i);
+      if (g) {
+        m = this.meshFromGeometry(b.name, g);
+        this.finish(m, b.color);
+      } else if (b.shape === "box") {
         m = this.box(b.name, b.min[0], b.max[0], b.min[2], b.max[2], b.min[1], b.max[1], b.color);
       } else if (b.shape === "slab") {
         m = MeshBuilder.CreateGround(b.name, { width: b.max[0] - b.min[0], height: b.max[2] - b.min[2] }, this.scene);
@@ -82,9 +111,41 @@ export class Level {
       }
       if (b.id) this.byId.set(b.id, m);
       for (const t of b.tags ?? []) (this.byTag.get(t) ?? this.byTag.set(t, []).get(t)!).push(m);
-    }
+    });
     this.secretWall = this.byId.get("secret-wall")!;
     this.cageDoor = this.byId.get("cage-door")!;
+  }
+
+  /** The loaded shell GLB, if it exists and was built from this exact block layout. */
+  private usableShell(): LevelGeometry | null {
+    if (!LEVEL_SHELL || this.data !== LEVEL1) return null;
+    const want = levelGeometryHash(this.data);
+    if (LEVEL_SHELL.sourceHash !== want || LEVEL_SHELL.blocks.size !== this.data.blocks.length) {
+      console.warn(`[level] level1.glb is stale (hash ${LEVEL_SHELL.sourceHash} vs JSON ${want}); building blocks from JSON. ` +
+        "Rebuild: blender --background --factory-startup --python tools/blender/build_level.py");
+      return null;
+    }
+    return LEVEL_SHELL;
+  }
+
+  /**
+   * Babylon mesh from engine-neutral block geometry. The file's coordinates are game coordinates; only the
+   * triangle winding differs between glTF (right-handed) and Babylon (left-handed), so indices are flipped to match.
+   */
+  private meshFromGeometry(name: string, g: BlockGeometry): Mesh {
+    const idx = g.indices.slice();
+    if (windingSign(g.positions, g.normals, idx) !== BABYLON_WINDING) {
+      for (let t = 0; t < idx.length; t += 3) { const k = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = k; }
+    }
+    const vd = new VertexData();
+    vd.positions = g.positions; vd.normals = g.normals; vd.indices = idx;
+    if (g.uv0) vd.uvs = g.uv0;
+    if (g.uv1) vd.uvs2 = g.uv1;
+    const m = new Mesh(name, this.scene);
+    vd.applyToMesh(m);
+    m.position.set(g.translation[0], g.translation[1], g.translation[2]);
+    m.metadata = { ...(m.metadata ?? {}), levelBlock: g.blockIndex };
+    return m;
   }
 
   /**

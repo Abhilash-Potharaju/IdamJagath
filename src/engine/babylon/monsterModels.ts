@@ -3,9 +3,7 @@ import {
   type Scene, StandardMaterial, TransformNode, Vector3,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
-import { setDamageable } from "./types";
-import type { Enemy } from "./enemies";
-import { GAMEPLAY } from "../data/gameplay";
+import { setTarget, type DamageFn } from "./convert";
 
 /**
  * Skins a code-driven enemy with an animated Sketchfab model (CC BY, see src/credits.ts).
@@ -22,9 +20,6 @@ export interface MonsterModelSpec {
   keep?: string[];         // procedural part names to keep visible (e.g. the Spitter's glowing sac)
 }
 
-/** Model specs come from data/gameplay/enemies.json (`<type>.model`). */
-export const CRAWLER_MODEL: MonsterModelSpec = GAMEPLAY.enemies.crawler.model;
-export const SPITTER_MODEL: MonsterModelSpec = GAMEPLAY.enemies.spitter.model;
 
 /** ?classicmonsters keeps the old procedural monsters. */
 const ENABLED = !new URLSearchParams(location.search).has("classicmonsters");
@@ -39,12 +34,20 @@ function load(scene: Scene, file: string): Promise<AssetContainer> {
   return p;
 }
 
-/** Internals of Enemy we need (kept loose to avoid widening Enemy's public API). */
-type EnemyInternals = Enemy & { bodyMat: StandardMaterial; root: Mesh };
+/** What a model needs from an enemy view (see EnemyViews.ts). */
+export interface SkinnableEnemy {
+  readonly root: Mesh;
+  readonly alive: boolean;
+  readonly core: { id: number };
+}
 
-export function attachMonsterModel(enemy: Enemy, spec: MonsterModelSpec): void {
+/**
+ * `onMuzzle` receives the local position where a kept part (e.g. the Spitter's sac) was re-seated, so the core can
+ * fire from the visible weak spot (set once per model; deterministic).
+ */
+export function attachMonsterModel(view: SkinnableEnemy, spec: MonsterModelSpec, onMuzzle?: (local: { x: number; y: number; z: number }) => void): void {
   if (!ENABLED) return;
-  const e = enemy as EnemyInternals;
+  const e = view as SkinnableEnemy & { bodyMat: StandardMaterial; damage: DamageFn };
   const scene = e.root.getScene();
   load(scene, spec.file).then((c) => {
     if (e.root.isDisposed() || !e.alive) return;
@@ -84,6 +87,7 @@ export function attachMonsterModel(enemy: Enemy, spec: MonsterModelSpec): void {
         // Re-seat kept parts on the model's back (e.g. the Spitter's sac, its weak spot + firing tell)
         m.setParent(e.root);
         m.position.set(0, topY + 0.05, spec.length * 0.12);
+        onMuzzle?.(m.position);
         continue;
       }
       m.isVisible = false;
@@ -92,7 +96,7 @@ export function attachMonsterModel(enemy: Enemy, spec: MonsterModelSpec): void {
     for (const m of meshes) {
       m.isPickable = true;
       m.alwaysSelectAsActiveMesh = true; // skinned bounds don't follow the animation; avoid culling pops
-      setDamageable(m, { takeDamage: (a, p) => e.takeDamage(a, p) });
+      setTarget(m, { kind: "enemy", id: e.core.id, mul: 1 }, e.damage);
       if (m.material) mats.add(m.material as PBRMaterial | StandardMaterial);
     }
 

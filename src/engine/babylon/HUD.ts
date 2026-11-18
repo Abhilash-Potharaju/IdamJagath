@@ -1,5 +1,3 @@
-import { Feel } from "./feel";
-
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 
 function el(css: string, parent: HTMLElement): HTMLElement {
@@ -30,6 +28,8 @@ export class HUD {
   private arcI = 0;
   private lowHp: HTMLElement;
   private lastBeat = 0;
+  /** Called on each low-health heartbeat (wired to audio). */
+  onHeartbeat: () => void = () => {};
 
   constructor() {
     // Damage direction arcs around the crosshair
@@ -42,8 +42,12 @@ export class HUD {
     // Low-health pulse vignette
     this.lowHp = el("position:absolute;inset:0;pointer-events:none;opacity:0;" +
       "box-shadow:inset 0 0 220px 70px rgba(150,0,0,.85);", this.root);
-    Feel.on("hurt", (e) => {
-      if (!e.from) return;
+  }
+
+  /** Damage-direction arc toward the attacker (core "hurt" event). */
+  onHurt(e: { amount: number; from?: { x: number; z: number }; playerPos: { x: number; z: number }; yaw: number }): void {
+    if (!e.from) return;
+    {
       const dx = e.from.x - e.playerPos.x, dz = e.from.z - e.playerPos.z;
       const ang = Math.atan2(dx, dz) - e.yaw; // 0 = in front, + = to the right
       const a = this.arcs[this.arcI++ % this.arcs.length];
@@ -53,7 +57,7 @@ export class HUD {
       void a.offsetWidth; // restart the fade
       a.style.transition = "opacity .9s ease-out";
       a.style.opacity = "0";
-    });
+    }
   }
 
   show(on: boolean): void {
@@ -72,7 +76,7 @@ export class HUD {
     if (hp > 0 && hp <= 30) {
       const beat = 0.85;
       this.lowHp.style.opacity = String(0.35 + 0.35 * Math.max(0, Math.sin(((now % beat) / beat) * Math.PI * 2)));
-      if (now - this.lastBeat > beat) { this.lastBeat = now; Feel.emit("heartbeat", {}); }
+      if (now - this.lastBeat > beat) { this.lastBeat = now; this.onHeartbeat(); }
     } else {
       this.lowHp.style.opacity = "0";
     }
