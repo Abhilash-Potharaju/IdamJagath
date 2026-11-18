@@ -120,7 +120,7 @@ export class GameWorld implements EnemyContext {
   }
 
   spawn(sp: Spawn, awake: boolean): Enemy {
-    const at = new Vec3(sp.at[0], 0, sp.at[1]);
+    const at = new Vec3(sp.at[0], sp.y ?? 0, sp.at[1]);
     const E = this.data.enemies;
     const e = sp.type === "crawler" ? new Crawler(this, at, E.crawler)
       : sp.type === "spitter" ? new Spitter(this, at, E.spitter) : new Warden(this, at, E.warden);

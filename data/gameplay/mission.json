@@ -11,7 +11,8 @@
     { "type": "crawler", "at": [0, 25] }, { "type": "crawler", "at": [2, 36] }, { "type": "crawler", "at": [-2, 50] },
     { "type": "spitter", "at": [0, 56] },
     { "type": "spitter", "at": [-31, 36] }, { "type": "crawler", "at": [-28, 22] }, { "type": "crawler", "at": [-33, 26] },
-    { "type": "spitter", "at": [20, 96] }, { "type": "spitter", "at": [-20, 72] }, { "type": "crawler", "at": [10, 68] }, { "type": "crawler", "at": [-12, 90] }
+    { "type": "spitter", "at": [20, 96] }, { "type": "spitter", "at": [-20, 72] }, { "type": "crawler", "at": [10, 68] }, { "type": "crawler", "at": [-12, 90] },
+    { "type": "spitter", "at": [-5.5, 82], "y": 20.58 }, { "type": "crawler", "at": [-4, 90], "y": 20.58 }, { "type": "crawler", "at": [4.5, 91], "y": 20.58 }
   ],
   "ambush": {
     "message": "AMBUSH!", "alarmSeconds": 2.5, "wakeEnemiesNorthOfZ": 60,

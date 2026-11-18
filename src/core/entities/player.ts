@@ -205,6 +205,13 @@ export class Player {
       this.landDipV -= 2.2 + strength * 6;
       this.ctx.events.emit("land", { strength });
       if (strength > 0.5) this.addTrauma(strength * 0.25);
+      // Fall damage: none below `minSpeed` (≈3 m drop), then linear in impact speed (a 21 m roof jump ≈ 85 HP)
+      const F = this.P.fallDamage ?? { minSpeed: 12, perSpeed: 4.5 };
+      const impact = -velYBefore;
+      if (impact > F.minSpeed) {
+        this.hurt((impact - F.minSpeed) * F.perSpeed);
+        this.addTrauma(Math.min(1, (impact - F.minSpeed) / 15));
+      }
     }
     this.speed = Math.hypot(this.pos.x - before.x, this.pos.z - before.z) / Math.max(dt, 1e-4);
     if (this.speed < this.vel.length() * 0.3) this.vel.scaleInPlace(0.5); // don't keep pushing into walls

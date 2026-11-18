@@ -105,6 +105,19 @@ describe("player movement", () => {
     expect(world.player.grounded).toBe(false);
     physics.noGround = false;
   });
+  it("takes no damage from a jump but hurts on a long fall (roof ≈ 21 m)", () => {
+    const { world } = makeWorld({ explore: true });
+    run(world, 0.5);
+    const hp = world.player.health;
+    world.step(DT, input({ jumpPressed: true }));
+    run(world, 1.2);
+    expect(world.player.health).toBe(hp); // normal jump: no fall damage
+    world.player.pos.y += 21;             // drop from the Charminar roof height
+    run(world, 2.5);
+    const lost = hp - world.player.health;
+    expect(lost).toBeGreaterThan(60);
+    expect(lost).toBeLessThan(100);       // painful, but survivable at full health
+  });
 });
 
 describe("weapons", () => {

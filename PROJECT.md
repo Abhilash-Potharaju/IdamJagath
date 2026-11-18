@@ -249,4 +249,8 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - Verified (lead): climb 8.6 s up / 7.9 s down (`tools/dev/climb_test.js`), stuck test 0/150, roof pylon destroyed by actually shooting it from the terrace, mission → won, no errors. Tip: call `__game.engine.stopRenderLoop()` in headless tests; the bigger scene renders very slowly in software Chrome.
   - Unreviewed by eye: the look of the door, shaft and roof (no screenshots taken). Owner to playtest.
 - Also added: **rebindable controls incl. mouse side buttons** (Controls screen, `src/engine/babylon/bindings.ts`).
+- **Roof guards + fall damage** (user playtest: "awesome"; asked for enemies on top and fall damage):
+  - Spawns support an optional floor height `y` (`Spawn.y`, mission.json); enemies keep that height. Roof terrace guards: 1 Spitter (−5.5, 82) + 2 Crawlers (−4, 90) (4.5, 91) at y 20.58. Total initial enemies 14.
+  - Fall damage in core (`player.json` `fallDamage`: none below 12 m/s impact ≈ 3 m, then 4.5 HP per extra m/s). The roof jump in game took 100 → 6 HP. New unit test (22 total).
+  - Regression: mission → won, no errors.
 

@@ -45,7 +45,7 @@ export abstract class Enemy {
     this.radius = stats.radius;
     this.halfHeight = stats.halfHeight;
     this.sightRange = stats.sightRange;
-    this.pos = new Vec3(at.x, stats.halfHeight, at.z);
+    this.pos = new Vec3(at.x, at.y + stats.halfHeight, at.z); // at.y = floor height (roof spawns)
     this.body = ctx.physics.createBody(new Vec3(stats.radius, stats.halfHeight, stats.radius), this.pos, "enemy-root");
   }
 

@@ -30,6 +30,8 @@ export interface WeaponsFile { weapons: WeaponData[] }
 
 export interface PlayerData {
   maxHealth: number;
+  /** Landing damage: none below minSpeed (m/s impact), then perSpeed HP per extra m/s. Optional (defaults in code). */
+  fallDamage?: { minSpeed: number; perSpeed: number };
   overchargeCap: number;
   collisionHalfExtents: [number, number, number];
   gravity: number;
@@ -98,7 +100,7 @@ export interface WardenData extends EnemyBase {
 export interface EnemiesFile { crawler: CrawlerData; spitter: SpitterData; warden: WardenData }
 
 export type EnemyType = "crawler" | "spitter" | "warden";
-export interface Spawn { type: EnemyType; at: [number, number] }
+export interface Spawn { type: EnemyType; at: [number, number]; /** floor height (m) for elevated spawns, e.g. the Charminar roof */ y?: number }
 
 export interface MissionData {
   id: string;

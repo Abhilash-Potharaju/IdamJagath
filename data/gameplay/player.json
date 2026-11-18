@@ -1,8 +1,12 @@
 {
-  "$doc": "Player movement + camera. Units: m, s, m/s, m/s², radians. Collision capsule = ellipsoid half-extents.",
+  "$doc": "Player movement + camera. Units: m, s, m/s, m/s\u00b2, radians. Collision capsule = ellipsoid half-extents.",
   "maxHealth": 100,
   "overchargeCap": 200,
-  "collisionHalfExtents": [0.4, 0.9, 0.4],
+  "collisionHalfExtents": [
+    0.4,
+    0.9,
+    0.4
+  ],
   "gravity": -24,
   "walkSpeed": 6.5,
   "sprintSpeed": 10,
@@ -19,5 +23,9 @@
   "zoomSpeed": 12,
   "accelGround": 70,
   "decelGround": 55,
-  "accelAir": 14
+  "accelAir": 14,
+  "fallDamage": {
+    "minSpeed": 12,
+    "perSpeed": 4.5
+  }
 }
