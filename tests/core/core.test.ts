@@ -120,6 +120,19 @@ describe("player movement", () => {
   });
 });
 
+describe("melee reach", () => {
+  it("a crawler on a higher floor right above the player cannot bite", () => {
+    const { world } = makeWorld({ explore: true });
+    run(world, 0.5);
+    const p = world.player.pos;
+    const c = world.spawn({ type: "crawler", at: [p.x + 0.5, p.z], y: 6 }, true); // 6 m above, horizontally adjacent
+    const hp = world.player.health;
+    run(world, 3, () => input({}));
+    expect(c.pos.y).toBeGreaterThan(5);
+    expect(world.player.health).toBe(hp);
+  });
+});
+
 describe("weapons", () => {
   /** A frozen crawler straight ahead of the player (zoo freezes enemies). */
   function range(dist: number) {

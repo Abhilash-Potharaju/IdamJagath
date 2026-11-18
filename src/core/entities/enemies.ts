@@ -77,6 +77,19 @@ export abstract class Enemy {
 
   eye(): Vec3 { return this.pos.add(new Vec3(0, 0.3, 0)); }
 
+  /**
+   * Can a melee/contact attack actually reach the player? Horizontal range AND about the same floor height AND a
+   * clear line of sight, so monsters can't bite through walls, floors or the Charminar stair shaft.
+   */
+  canReach(range: number): boolean {
+    if (this.distToPlayer() >= range) return false;
+    const myFeet = this.pos.y - this.halfHeight;
+    const p = this.ctx.player.pos;
+    const theirFeet = p.y - 0.9; // player capsule half-height
+    if (Math.abs(myFeet - theirFeet) > 1.6) return false;
+    return this.ctx.physics.lineOfSight(this.eye(), this.ctx.player.eye);
+  }
+
   seesPlayer(): boolean {
     return this.distToPlayer() < this.sightRange && this.ctx.physics.lineOfSight(this.eye(), this.ctx.player.eye);
   }
@@ -160,7 +173,7 @@ export class Crawler extends Enemy {
         this.face(toP, dt);
         const side = new Vec3(toP.z, 0, -toP.x).scale(Math.sin(this.phase * D.zigzagRate) * D.zigzagWeight);
         this.move(toP.add(side).normalize(), D.chaseSpeed, dt);
-        if (dist < D.bite.range && this.biteCd <= 0) {
+        if (this.biteCd <= 0 && dist < D.bite.range && this.canReach(D.bite.range)) {
           ctx.player.hurt(D.bite.damage, this.pos, D.bite.knockback);
           ctx.events.emit("damageFlash", {});
           ctx.sound("crawler_bite", this.pos.clone());
@@ -189,7 +202,7 @@ export class Crawler extends Enemy {
       case "lunge":
         this.t -= dt;
         this.move(this.lungeDir, D.lunge.speed, dt);
-        if (!this.lungeHit && dist < D.lunge.hitRange) {
+        if (!this.lungeHit && dist < D.lunge.hitRange && this.canReach(D.lunge.hitRange)) {
           this.lungeHit = true;
           ctx.player.hurt(D.lunge.damage, this.pos, D.lunge.knockback);
           ctx.events.emit("damageFlash", {});
@@ -312,7 +325,7 @@ export class Warden extends Enemy {
         if (this.pos.y <= D.halfHeight) {
           ctx.events.emit("wardenLanded", { id: this.id, at: this.pos.clone() });
           ctx.sound("warden_land", this.pos.clone());
-          if (dist < D.land.radius) { ctx.player.hurt(D.land.damage, this.pos, D.land.knockback); ctx.events.emit("damageFlash", {}); }
+          if (dist < D.land.radius && this.canReach(D.land.radius)) { ctx.player.hurt(D.land.damage, this.pos, D.land.knockback); ctx.events.emit("damageFlash", {}); }
           this.state = "stalk";
         }
         break;
@@ -320,7 +333,7 @@ export class Warden extends Enemy {
         this.face(toP, dt, D.turnRate); // slow turner: you can flank it
         this.move(toP, D.stalkSpeed, dt);
         this.chargeCd -= dt;
-        if (dist < D.contact.range) ctx.player.hurt(D.contact.damagePerSecond * dt, this.pos, D.contact.knockback);
+        if (dist < D.contact.range && this.canReach(D.contact.range)) ctx.player.hurt(D.contact.damagePerSecond * dt, this.pos, D.contact.knockback);
         if (this.chargeCd <= 0 && dist > D.charge.minRange && dist < D.charge.maxRange && this.seesPlayer()) {
           this.state = "windup";
           this.t = D.charge.windup;
@@ -344,7 +357,7 @@ export class Warden extends Enemy {
       case "charge": {
         this.t -= dt;
         const frac = this.move(this.chargeDir, D.charge.speed, dt);
-        if (!this.chargeHit && dist < D.charge.hitRange) {
+        if (!this.chargeHit && dist < D.charge.hitRange && this.canReach(D.charge.hitRange)) {
           this.chargeHit = true;
           ctx.player.hurt(D.charge.damage, this.pos, D.charge.knockback);
           ctx.events.emit("damageFlash", {});

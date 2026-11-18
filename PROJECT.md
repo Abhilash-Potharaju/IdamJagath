@@ -253,4 +253,5 @@ The official Blender Lab MCP (projects.blender.org/lab/blender_mcp, v1.0.x, need
   - Spawns support an optional floor height `y` (`Spawn.y`, mission.json); enemies keep that height. Roof terrace guards: 1 Spitter (−5.5, 82) + 2 Crawlers (−4, 90) (4.5, 91) at y 20.58. Total initial enemies 14.
   - Fall damage in core (`player.json` `fallDamage`: none below 12 m/s impact ≈ 3 m, then 4.5 HP per extra m/s). The roof jump in game took 100 → 6 HP. New unit test (22 total).
   - Regression: mission → won, no errors.
+- **Fix: attacked while climbing the stairs** (user report). Melee/contact checks (Crawler bite + lunge hit, Warden contact/charge/landing) used horizontal distance only, so the roof guards above the shaft (and monsters outside the leg) could hit through floors and walls. New `Enemy.canReach(range)` in core: horizontal range AND same floor (feet within 1.6 m) AND line of sight. Unit test added (23). Verified in game: with the roof guards awake, no hits inside the shaft; hits only at the hatch exit (the intended roof fight). Test note: teleporting into the plaza triggers the ambush; set `world.mission.ambushDone = true` for isolated tests.
 
