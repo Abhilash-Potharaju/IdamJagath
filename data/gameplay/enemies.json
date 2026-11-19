@@ -31,6 +31,7 @@
       "recover": 1, "cooldownAfterRecover": 3.5, "cooldownAfterStun": 2.5
     },
     "stun": { "duration": 3.5, "damageMultiplier": 2 },
+    "unstick": { "after": 1.5, "distance": 9, "maxTime": 4, "chargeCooldown": 0.6 },
     "model": {
       "file": "cyclops_brute.glb", "length": 3.3, "axis": "y", "yaw": 0, "anim": "Idle", "animSpeedRef": 2.6,
       "keepInPlace": ["shield"], "clips": { "idle": "Idle" }, "eyes": ["Cyclops_Eye_Naterial"], "eyeColor": "#ff3018"

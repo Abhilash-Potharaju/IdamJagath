@@ -99,6 +99,8 @@ export interface WardenData extends EnemyBase {
     hitRange: number; wallStopFraction: number; recover: number; cooldownAfterRecover: number; cooldownAfterStun: number;
   };
   stun: { duration: number; damageMultiplier: number };
+  /** Anti-stalemate: blocked this long (s) without reaching the player, back off to `distance` (max `maxTime` s). */
+  unstick: { after: number; distance: number; maxTime: number; chargeCooldown: number };
   model: MonsterModelData;
 }
 
@@ -198,7 +200,8 @@ const SPECS = {
         ...hit, initialCooldown: N, minRange: N, maxRange: N, windup: N, duration: N, speed: N, hitRange: N,
         wallStopFraction: N, recover: N, cooldownAfterRecover: N, cooldownAfterStun: N,
       },
-      stun: { duration: N, damageMultiplier: N }, model,
+      stun: { duration: N, damageMultiplier: N },
+      unstick: { after: N, distance: N, maxTime: N, chargeCooldown: N }, model,
     },
   } as Spec,
   mission: {

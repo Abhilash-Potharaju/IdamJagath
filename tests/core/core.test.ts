@@ -287,6 +287,22 @@ describe("enemies", () => {
     run(world, GAMEPLAY.enemies.warden.stun.duration + 0.1);
     expect(w.shieldUp).toBe(true);
   });
+
+  it("Warden backs off instead of standing shield-up in a doorway it can't fit through", () => {
+    const { world, physics } = makeWorld({ explore: true });
+    run(world, 0.3);
+    world.player.teleport(0, 0.9, 4); // just past the "doorway", closer than the charge's minimum range
+    // a 1.2 m doorway: the player can see (and shoot) through it, the Warden (radius 1.1) can't fit
+    physics.walls.push({ min: new Vec3(-6, 0, 2), max: new Vec3(-0.6, 4, 2.6) }, { min: new Vec3(0.6, 0, 2), max: new Vec3(6, 4, 2.6) });
+    const w = world.spawn({ type: "warden", at: [0, 0] }, true) as Warden;
+    w.pos.y = GAMEPLAY.enemies.warden.halfHeight;
+    w.state = "stalk";
+    const U = GAMEPLAY.enemies.warden.unstick;
+    const states = new Set<string>();
+    for (let i = 0; i < 60 * (U.after + U.maxTime + 4); i++) { world.step(DT, input()); states.add(w.state); }
+    expect(states.has("withdraw")).toBe(true);
+    expect(states.has("stunned")).toBe(true); // backed off, charged the doorway, hit the wall: shield down
+  });
 });
 
 describe("mission", () => {

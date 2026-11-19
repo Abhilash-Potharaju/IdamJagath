@@ -316,8 +316,10 @@ export class Spitter extends Enemy {
  * Counter: dodge so it slams into a wall: it's stunned, its shield drops, and it takes extra damage.
  */
 export class Warden extends Enemy {
-  state: "drop" | "stalk" | "windup" | "charge" | "stunned" | "recover" = "drop";
+  state: "drop" | "stalk" | "windup" | "charge" | "stunned" | "recover" | "withdraw" = "drop";
   t = 0;
+  /** Seconds spent pressed against geometry while unable to reach the player (anti-stalemate). */
+  private blockedT = 0;
   shieldUp = true;
   private chargeCd: number;
   private chargeDir = Vec3.zero();
@@ -359,9 +361,20 @@ export class Warden extends Enemy {
         break;
       case "stalk":
         this.face(toP, dt, D.turnRate); // slow turner: you can flank it
-        this.move(toP, D.stalkSpeed, dt);
+        const reach = this.canReach(D.contact.range);
+        const frac = this.move(toP, D.stalkSpeed, dt);
         this.chargeCd -= dt;
-        if (dist < D.contact.range && this.canReach(D.contact.range)) ctx.player.hurt(D.contact.damagePerSecond * dt, this.pos, D.contact.knockback);
+        if (reach) ctx.player.hurt(D.contact.damagePerSecond * dt, this.pos, D.contact.knockback);
+        // Anti-stalemate: too big for a doorway (the Charminar leg) or wedged at a corner, it would stand there with
+        // its shield up, too close to charge and unable to touch the player. Back off into the open instead, which
+        // lets the player out and sets up a charge (into the wall, so stunned).
+        this.blockedT = frac < 0.3 && !reach ? this.blockedT + dt : Math.max(0, this.blockedT - dt * 2);
+        if (this.blockedT > D.unstick.after) {
+          this.blockedT = 0;
+          this.state = "withdraw";
+          this.t = D.unstick.maxTime;
+          break;
+        }
         if (this.chargeCd <= 0 && dist > D.charge.minRange && dist < D.charge.maxRange && this.seesPlayer()) {
           this.state = "windup";
           this.t = D.charge.windup;
@@ -420,6 +433,20 @@ export class Warden extends Enemy {
         this.t -= dt;
         if (this.t <= 0) { this.state = "stalk"; this.chargeCd = D.charge.cooldownAfterRecover; }
         break;
+      case "withdraw": {
+        // Back away (shield still toward the player); if that's blocked too, try veering left/right.
+        this.face(toP, dt, D.turnRate);
+        this.t -= dt;
+        const away = toP.scale(-1);
+        let frac = this.move(away, D.stalkSpeed, dt);
+        if (frac < 0.3) frac = this.move(rotateY(away, 1.0), D.stalkSpeed, dt);
+        if (frac < 0.3) this.move(rotateY(away, -1.0), D.stalkSpeed, dt);
+        if (this.t <= 0 || dist >= D.unstick.distance) {
+          this.state = "stalk";
+          this.chargeCd = Math.min(this.chargeCd, D.unstick.chargeCooldown);
+        }
+        break;
+      }
     }
   }
 
