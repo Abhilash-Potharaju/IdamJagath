@@ -42,7 +42,7 @@ export class MissionView {
     this.buildPylons(damage);
     this.buildPickups();
     setTarget(level.secretWall, { kind: "secretWall", id: 0, mul: 1 }, damage);
-    this.captives = new Captives(scene);
+    this.captives = new Captives(scene, world);
     modelJobs.push(this.captives.ready);
     this.buildBeacon();
 
@@ -60,6 +60,7 @@ export class MissionView {
       const door = level.cageDoor;
       burst(scene, door.position.clone(), "#ff2a1a", 2.5, 0.4);
       door.dispose();
+      this.captives.doorOpened();
     });
     ev.on("captivesFreed", () => {
       this.captives.freeAll();

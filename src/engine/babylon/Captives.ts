@@ -1,69 +1,89 @@
 import {
-  type AbstractMesh, type AnimationGroup, Color3, LoadAssetContainerAsync, MeshBuilder, PBRMaterial, PointLight, type Scene,
-  StandardMaterial, TransformNode, Vector3,
+  type AbstractMesh, type AnimationGroup, Color3, Constants, DynamicTexture, LoadAssetContainerAsync, MeshBuilder, PBRMaterial,
+  PointLight, type Scene, StandardMaterial, TransformNode, Vector3,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import "../../game/Props"; // configures the locally hosted meshopt decoder before any model loads
+import type { GameWorld } from "../../core/world";
+import { GAMEPLAY } from "../../data/gameplay";
 
 /**
- * The captives in the Charminar cage (presentation only; the core just knows "captives freed").
+ * The captives in the Charminar cage (presentation only; the core just knows "cage opened" and "captives freed", and
+ * monsters never target them, so they can't be hurt).
  *
- * Three Hyderabadi civilians (tools/blender/build_captives.py): one grips the cage's energy door, one kneels and
- * pleads, and one is half-converted: hunched and twitching under a violet conversion beam, glowing alien red. When
- * the player walks in, the beam dies, the red glow drains out of him, and all three run out through the door and
- * south under the Charminar's arches, then fade from view.
+ * Three Hyderabadi civilians (tools/blender/build_captives.py). Caged: one grips the energy door, one kneels and
+ * pleads, one is half-converted: grey-green skin with glowing alien veins, hunched and twitching under a violet
+ * conversion beam. When the door opens, the man at the door waves the player in. When the player walks in, the beam
+ * dies, the conversion drains out of the third man, and all three follow the player to the extraction point: they
+ * walk the player's own footpath (so never through walls), 2.4 / 3.6 / 4.8 m behind, standing when the player stops.
  */
 
 interface CaptiveSpec {
   file: string;
   idle: string;
-  /** Feet position (cage floor) and facing (Babylon yaw; 0 = +z, π = toward the Charminar). */
+  /** Feet position on the cage floor and facing (Babylon yaw; π = toward the door / the Charminar). */
   at: [number, number];
   yaw: number;
   converted?: boolean;
-  /** Seconds after the cage opens before this one starts running. */
-  delay: number;
-  /** Lateral lane of the escape run (m from the centre line), so they don't run through each other. */
-  lane: number;
+  /** Clip to switch to once the door is open (else keeps `idle`). */
+  doorOpen?: string;
+  /** Trail distance behind the player while following (m). */
+  follow: number;
+  /** Sideways offset from the footpath while following (m; + = player's left), so all three stay visible. */
+  side: number;
 }
 
 const SPECS: CaptiveSpec[] = [
-  { file: "blue.glb", idle: "Grip", at: [-0.6, 100.85], yaw: Math.PI, delay: 0.15, lane: -0.8 },
-  { file: "white.glb", idle: "Kneel", at: [1.9, 101.9], yaw: Math.PI - 0.35, delay: 0.55, lane: 0.9 },
-  { file: "red.glb", idle: "Hunch", at: [-1.9, 104.2], yaw: Math.PI + 0.25, converted: true, delay: 1.1, lane: -0.1 },
+  { file: "blue.glb", idle: "Grip", doorOpen: "Wave", at: [-0.9, 100.85], yaw: Math.PI, follow: 2.4, side: 0.55 },
+  { file: "white.glb", idle: "Kneel", at: [1.15, 102.2], yaw: Math.PI - 0.25, follow: 3.5, side: -0.75 },
+  { file: "red.glb", idle: "Hunch", at: [0.15, 104.5], yaw: Math.PI, converted: true, follow: 4.6, side: 0.4 },
 ];
-const RUN_SPEED = 4.6;       // m/s
-const RUN_ANIM_SPEED = 1.15; // run clip playback rate matched to RUN_SPEED
-const RUN_TIME = 6.5;        // s of running before fading out
-const FADE = 1.2;
-const CONVERT_GLOW = new Color3(0.55, 0.04, 0.06);
+const WALK_REF = 1.45;      // m/s the walk clip is authored for
+const RUN_REF = 4.0;        // m/s the run clip is authored for
+const MAX_SPEED = 7.2;      // keeps up with a sprinting player
+const PERSONAL_SPACE = 1.6; // never closer to the player than this
+const TRAIL_STEP = 0.35;    // m between recorded footpath points
+const CONVERT_GLOW = new Color3(1.5, 0.12, 0.08);
+const CONVERT_TINT = new Color3(0.58, 0.66, 0.52); // sickly grey-green skin and cloth
+const BLEND = 0.12;
+
+interface TrailPoint { p: Vector3; s: number }
 
 interface Captive {
   spec: CaptiveSpec;
   root: TransformNode;
   meshes: AbstractMesh[];
   mats: PBRMaterial[];
-  idle?: AnimationGroup;
-  run?: AnimationGroup;
-  t: number;          // seconds since freed (-1 = still captive)
-  path: Vector3[];
-  leg: number;
-  done: boolean;
+  clips: Map<string, AnimationGroup>;
+  current?: AnimationGroup;
+  mode: "caged" | "joining" | "following";
+  /** Arc-length position along the player's trail while following. */
+  s: number;
+  freedT: number;
+  /** Current sideways offset (eases toward the spec's, or 0 where there's no room). */
+  lat: number;
 }
 
 export class Captives {
   private readonly scene: Scene;
+  private readonly world: GameWorld;
   private readonly list: Captive[] = [];
   private beam: { mesh: AbstractMesh; light: PointLight; mat: StandardMaterial } | null = null;
   private time = 0;
-  private freedAt = -1;
+  private freed = false;
+  private doorOpen = false;
+  private done = false;
+  private trail: TrailPoint[] = [];
+  private readonly feetOffset = GAMEPLAY.player.collisionHalfExtents[1];
   /** Resolves once the models are in (the loading screen waits on it). */
   readonly ready: Promise<unknown>;
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, world: GameWorld) {
     this.scene = scene;
+    this.world = world;
     this.ready = Promise.allSettled(SPECS.map((s) => this.load(s)));
     this.buildBeam();
+    world.events.on("missionEnd", () => { this.done = true; });
     scene.onBeforeRenderObservable.add(() => this.update(Math.min(0.1, scene.getEngine().getDeltaTime() / 1000)));
   }
 
@@ -71,29 +91,42 @@ export class Captives {
     const c = await LoadAssetContainerAsync(`${import.meta.env.BASE_URL}models/captives/${spec.file}`, this.scene);
     const inst = c.instantiateModelsToScene((n) => n, false, { doNotInstantiate: true });
     const root = new TransformNode(`captive-${spec.file}`, this.scene);
-    const holder = new TransformNode("captive-model", this.scene);
-    holder.parent = root;
-    for (const r of inst.rootNodes) r.parent = holder;
-    const meshes = holder.getChildMeshes(false);
-    // build_captives.py exports them 1.70 m tall with the feet at the origin (skinned bounds are unreliable here)
+    // build_captives.py exports them 1.70 m tall with the feet at the origin
+    for (const r of inst.rootNodes) r.parent = root;
     root.position.set(spec.at[0], 0, spec.at[1]);
     root.rotation.y = spec.yaw;
+    const meshes = root.getChildMeshes(false);
     const mats: PBRMaterial[] = [];
     for (const m of meshes) {
-      m.isPickable = false; // bullets pass; the cage door is the target, not the people
+      m.isPickable = false; // bullets pass; the people are never targets
       m.receiveShadows = true;
-      if (m.material instanceof PBRMaterial && !mats.includes(m.material)) {
+      if (m.material instanceof PBRMaterial) {
         if (spec.converted) m.material = m.material.clone(`${m.material.name}-converted`);
-        mats.push(m.material as PBRMaterial);
+        if (!mats.includes(m.material as PBRMaterial)) mats.push(m.material as PBRMaterial);
       }
     }
-    const idle = inst.animationGroups.find((g) => g.name.startsWith(spec.idle));
-    const run = inst.animationGroups.find((g) => g.name.startsWith("Run"));
-    for (const g of inst.animationGroups) g.stop();
-    idle?.start(true, 0.9 + Math.random() * 0.2, idle.from + Math.random() * (idle.to - idle.from));
-    const cap: Captive = { spec, root, meshes, mats, idle, run, t: -1, path: [], leg: 0, done: false };
+    if (spec.converted) for (const mt of mats) { mt.emissiveTexture = veinTexture(this.scene); mt.albedoColor = CONVERT_TINT.clone(); }
+    const clips = new Map<string, AnimationGroup>();
+    for (const g of inst.animationGroups) {
+      g.stop();
+      g.enableBlending = true;
+      g.blendingSpeed = BLEND;
+      clips.set(g.name.replace(/\.\d+$/, ""), g);
+    }
+    const cap: Captive = { spec, root, meshes, mats, clips, mode: "caged", s: 0, freedT: 0, lat: 0 };
     this.list.push(cap);
-    if (this.freedAt >= 0) this.free(cap); // freed before the model finished loading
+    const startClip = this.doorOpen && spec.doorOpen ? spec.doorOpen : spec.idle;
+    this.play(cap, startClip, 0.9 + Math.random() * 0.2, true);
+    if (this.freed) this.free(cap); // freed before the model finished loading
+  }
+
+  private play(c: Captive, name: string, speed = 1, randomStart = false): void {
+    const g = c.clips.get(name);
+    if (!g) return;
+    if (c.current === g) { g.speedRatio = speed; return; }
+    c.current?.stop();
+    c.current = g;
+    g.start(true, speed, randomStart ? g.from + Math.random() * (g.to - g.from) : g.from);
   }
 
   /** A violet conversion beam from the cage roof onto the half-converted captive. */
@@ -102,27 +135,35 @@ export class Captives {
     const mat = new StandardMaterial("conversion-beam", this.scene);
     mat.emissiveColor = Color3.FromHexString("#9a4dff");
     mat.disableLighting = true;
-    mat.alpha = 0.22;
-    const mesh = MeshBuilder.CreateCylinder("conversion-beam", { height: 3.2, diameterTop: 0.5, diameterBottom: 1.3, tessellation: 18, cap: 0 }, this.scene);
+    mat.alpha = 0.2;
+    mat.alphaMode = Constants.ALPHA_ADD; // adds light over him instead of tinting him violet
+    const mesh = MeshBuilder.CreateCylinder("conversion-beam", { height: 3.2, diameterTop: 0.45, diameterBottom: 1.5, tessellation: 18, cap: 0 }, this.scene);
     mesh.position.set(spec.at[0], 1.6, spec.at[1]);
     mesh.material = mat;
     mesh.isPickable = false;
-    const light = new PointLight("conversion-light", new Vector3(spec.at[0], 2.4, spec.at[1]), this.scene);
+    const light = new PointLight("conversion-light", new Vector3(spec.at[0], 2.4, spec.at[1] - 0.6), this.scene);
     light.diffuse = Color3.FromHexString("#a050ff");
     light.intensity = 1.4;
     light.range = 6;
     this.beam = { mesh, light, mat };
     // A cold work-light inside the cage so the people read from the plaza (the cage is otherwise a dark box)
-    const lamp = new PointLight("cage-lamp", new Vector3(0.6, 2.9, 102.4), this.scene);
+    const lamp = new PointLight("cage-lamp", new Vector3(0.2, 2.9, 101.8), this.scene);
     lamp.diffuse = Color3.FromHexString("#d8e4ff");
     lamp.intensity = 1.6;
     lamp.range = 7;
   }
 
-  /** The player walked in: the beam dies and everyone runs for it. */
+  /** The pylons are down and the cage door is gone: the man at the door waves the player in. */
+  doorOpened(): void {
+    this.doorOpen = true;
+    for (const c of this.list) if (c.mode === "caged" && c.spec.doorOpen) this.play(c, c.spec.doorOpen);
+  }
+
+  /** The player walked in: the beam dies and everyone follows the player out. */
   freeAll(): void {
-    if (this.freedAt >= 0) return;
-    this.freedAt = this.time;
+    if (this.freed) return;
+    this.freed = true;
+    this.trail = [{ p: this.playerFeet(), s: 0 }];
     if (this.beam) {
       this.beam.mesh.dispose();
       this.beam.light.dispose();
@@ -133,62 +174,149 @@ export class Captives {
   }
 
   private free(c: Captive): void {
-    c.t = 0;
-    const x = c.spec.at[0], l = c.spec.lane;
-    // out of the door, south under the Charminar's central arch, round the plaza cover, toward the lane
-    c.path = [new Vector3(x * 0.4, 0, 100.8), new Vector3(l * 0.6, 0, 98.6), new Vector3(l, 0, 86), new Vector3(l, 0, 74.5),
-      new Vector3(-3 + l, 0, 71), new Vector3(-3 + l, 0, 60), new Vector3(l, 0, 50)];
+    c.mode = "joining";
+    c.freedT = 0;
+  }
+
+  private playerFeet(): Vector3 {
+    const p = this.world.player.pos;
+    return new Vector3(p.x, p.y - this.feetOffset, p.z);
+  }
+
+  /** Point on the recorded footpath at arc length s. */
+  private trailAt(s: number): Vector3 {
+    const t = this.trail;
+    if (s <= 0 || t.length === 1) return t[0].p.clone();
+    let lo = 0, hi = t.length - 1;
+    if (s >= t[hi].s) return t[hi].p.clone();
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (t[m].s <= s) lo = m; else hi = m; }
+    const k = (s - t[lo].s) / Math.max(1e-6, t[hi].s - t[lo].s);
+    return Vector3.Lerp(t[lo].p, t[hi].p, k);
   }
 
   private update(dt: number): void {
     this.time += dt;
     const pulse = 0.65 + 0.35 * Math.sin(this.time * 5.3) * Math.sin(this.time * 1.7 + 1);
     if (this.beam) {
-      this.beam.mat.alpha = 0.16 + 0.1 * pulse;
+      this.beam.mat.alpha = 0.22 + 0.12 * pulse;
       this.beam.light.intensity = 1.1 + 0.6 * pulse;
     }
+    if (this.freed && !this.done) {
+      // record the player's footpath
+      const f = this.playerFeet(), last = this.trail[this.trail.length - 1];
+      const d = Vector3.Distance(f, last.p);
+      if (d >= TRAIL_STEP) this.trail.push({ p: f, s: last.s + d });
+    }
     for (const c of this.list) {
-      if (c.done) continue;
-      // The converted man glows alien red while the beam holds him; the glow drains out once he's free
+      // The conversion: alien-red veins pulse under grey-green skin; once free it drains out over 2.5 s
       if (c.spec.converted) {
-        const k = c.t < 0 ? pulse : Math.max(0, 1 - c.t / 1.5) * pulse;
-        for (const m of c.mats) m.emissiveColor = CONVERT_GLOW.scale(k);
+        const k = c.mode === "caged" ? 1 : Math.max(0, 1 - c.freedT / 2.5);
+        for (const m of c.mats) {
+          m.emissiveColor = CONVERT_GLOW.scale(k * pulse);
+          m.albedoColor = Color3.Lerp(Color3.White(), CONVERT_TINT, k);
+        }
       }
-      if (c.t < 0) continue;
-      c.t += dt;
-      const runT = c.t - c.spec.delay;
-      if (runT < 0) continue;
-      if (c.run && !c.run.isPlaying) {
-        c.idle?.stop();
-        c.run.start(true, RUN_ANIM_SPEED);
-      }
-      // follow the path
-      let step = RUN_SPEED * dt * Math.min(1, runT / 0.35); // quick acceleration
-      while (step > 0 && c.leg < c.path.length) {
-        const tgt = c.path[c.leg], p = c.root.position;
-        const d = tgt.subtract(p);
-        d.y = 0;
-        const len = d.length();
-        if (len < 1e-3) { c.leg++; continue; }
-        const mv = Math.min(step, len);
-        p.addInPlace(d.scale(mv / len));
-        step -= mv;
-        const want = Math.atan2(d.x, d.z);
-        let dy = want - c.root.rotation.y;
-        dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        c.root.rotation.y += dy * Math.min(1, dt * 10);
-        if (mv >= len) c.leg++;
-      }
-      const fade = Math.min(1, Math.max(0, (runT - RUN_TIME) / FADE));
-      if (fade > 0) for (const m of c.meshes) m.visibility = 1 - fade;
-      if (fade >= 1 || c.leg >= c.path.length) this.dispose(c);
+      if (c.mode === "caged") continue;
+      c.freedT += dt;
+      if (this.done) { this.play(c, "Idle"); continue; }
+      this.follow(c, dt);
     }
   }
 
-  private dispose(c: Captive): void {
-    c.done = true;
-    c.idle?.dispose();
-    c.run?.dispose();
-    c.root.dispose(false, true);
+  private follow(c: Captive, dt: number): void {
+    const p = c.root.position;
+    const player = this.playerFeet();
+    const total = this.trail[this.trail.length - 1].s;
+    let target: Vector3;
+    if (c.mode === "joining") {
+      // walk to where the player stood when freeing them, then onto the footpath
+      target = this.trailAt(Math.max(0, total - c.spec.follow));
+      if (Vector3.Distance(p, this.trail[0].p) < 0.4 || total > c.spec.follow + 1.5) {
+        c.mode = "following";
+        c.s = this.nearestS(p);
+      }
+    } else {
+      c.s = Math.max(c.s, this.nearestS(p, c.s));
+      const sT = Math.max(c.s, total - c.spec.follow);
+      target = this.trailAt(sT);
+      // stagger sideways off the footpath where the nav grid says there's room (ground floor only)
+      const back = this.trailAt(sT - 0.8), dir = target.subtract(back);
+      dir.y = 0;
+      let want = 0;
+      if (dir.lengthSquared() > 0.04 && target.y < 1) {
+        dir.normalize();
+        const left = new Vector3(-dir.z, 0, dir.x), nav = this.world.nav();
+        const o = target.add(left.scale(c.spec.side));
+        if (nav && nav.clearanceAt(o.x, o.z) > 0.45 && nav.lineClear(target.x, target.z, o.x, o.z, 0.35)) want = c.spec.side;
+        c.lat += (want - c.lat) * Math.min(1, dt * 2.5);
+        target.addInPlace(left.scale(c.lat));
+      } else {
+        c.lat += (0 - c.lat) * Math.min(1, dt * 2.5);
+      }
+    }
+    const toTarget = target.subtract(p);
+    toTarget.y = 0;
+    const gap = toTarget.length();
+    const playerDist = Math.hypot(player.x - p.x, player.z - p.z);
+    let speed = playerDist < PERSONAL_SPACE ? 0 : Math.min(MAX_SPEED, gap * 2.2);
+    if (speed < 0.25) speed = 0;
+    if (speed > 0) {
+      const step = Math.min(gap, speed * dt);
+      p.addInPlace(toTarget.scale(step / gap));
+      p.y += (target.y - p.y) * Math.min(1, dt * 8); // stairs/slopes: the footpath carries the height
+      this.turn(c, Math.atan2(toTarget.x, toTarget.z), dt, 10);
+    } else {
+      this.turn(c, Math.atan2(player.x - p.x, player.z - p.z), dt, 4);
+    }
+    if (speed === 0) this.play(c, "Idle");
+    else if (speed < 3.0) this.play(c, "Walk", Math.max(0.6, speed / WALK_REF));
+    else this.play(c, "Run", Math.min(1.6, speed / RUN_REF));
   }
+
+  /** Arc length of the trail point nearest to p (searching forward from `from`). */
+  private nearestS(p: Vector3, from = 0): number {
+    let best = from, bd = Infinity;
+    for (const t of this.trail) {
+      if (t.s < from - 1) continue;
+      const d = (t.p.x - p.x) ** 2 + (t.p.z - p.z) ** 2 + (t.p.y - p.y) ** 2;
+      if (d < bd) { bd = d; best = t.s; }
+      if (t.s > from + 12) break;
+    }
+    return best;
+  }
+
+  private turn(c: Captive, want: number, dt: number, rate: number): void {
+    let d = want - c.root.rotation.y;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    c.root.rotation.y += d * Math.min(1, dt * rate);
+  }
+}
+
+/** Glowing alien veins (emissive) for the half-converted captive: branching red lines on black. */
+let veins: DynamicTexture | null = null;
+function veinTexture(scene: Scene): DynamicTexture {
+  if (veins && veins.getScene() === scene) return veins;
+  const N = 512;
+  const t = new DynamicTexture("conversion-veins", { width: N, height: N }, scene, true);
+  const g = t.getContext() as CanvasRenderingContext2D;
+  g.fillStyle = "#000";
+  g.fillRect(0, 0, N, N);
+  g.lineCap = "round";
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const branch = (x: number, y: number, a: number, w: number, depth: number) => {
+    let len = 0;
+    while (len < 60 + depth * 30 && w > 0.4) {
+      const nx = x + Math.cos(a) * 6, ny = y + Math.sin(a) * 6;
+      g.strokeStyle = `rgba(255,${40 + Math.floor(rnd() * 50)},20,${0.55 + 0.45 * rnd()})`;
+      g.lineWidth = w;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(nx, ny); g.stroke();
+      x = nx; y = ny; a += (rnd() - 0.5) * 0.7; w *= 0.97; len += 6;
+      if (depth > 0 && rnd() < 0.08) branch(x, y, a + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.6), w * 0.7, depth - 1);
+    }
+  };
+  for (let i = 0; i < 26; i++) branch(rnd() * N, rnd() * N, rnd() * Math.PI * 2, 2.5 + rnd() * 2.5, 2);
+  t.update();
+  veins = t;
+  return t;
 }

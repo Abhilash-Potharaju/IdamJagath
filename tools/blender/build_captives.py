@@ -7,7 +7,8 @@ works whatever bone roll the glTF importer chose. Clips (looping, in place):
   Grip   - standing at the bars, gripping and shaking them        (blue)
   Kneel  - kneeling, hands together, pleading and rocking         (white: the blue model with the kurta recoloured)
   Hunch  - half-converted: hunched, arms hanging, twitching       (red)
-  Run    - escape run cycle                                        (all)
+  Wave   - the door is open: waving the player in                   (blue)
+  Idle / Walk / Run - following the player to the extraction point   (all)
 
 Run from idam-jagath/:
   blender --background --factory-startup --python tools/blender/build_captives.py
@@ -27,10 +28,11 @@ os.makedirs(RAW, exist_ok=True)
 FPS = 24
 
 VARIANTS = {
-    # name: (source folder, idle clip, recolour)
-    "blue": ("captive_blue", "Grip", None),
-    "white": ("captive_blue", "Kneel", "cream"),
-    "red": ("captive_red", "Hunch", None),
+    # name: (source folder, captive clip(s), recolour). Every variant also gets Idle / Walk / Run for following the
+    # player to the extraction point once freed.
+    "blue": ("captive_blue", ["Grip", "Wave"], None),
+    "white": ("captive_blue", ["Kneel"], "cream"),
+    "red": ("captive_red", ["Hunch"], None),
 }
 
 
@@ -45,6 +47,17 @@ def find(arm, key):
 
 def norm(v):
     return Vector(v).normalized()
+
+
+BASE = {}
+
+
+def capture_base(arm):
+    """Remember the imported pose; poses are built from it (the importer stores real offsets in the pose bones)."""
+    BASE.clear()
+    for pb in arm.pose.bones:
+        pb.rotation_mode = "QUATERNION"
+        BASE[pb.name] = (pb.location.copy(), pb.rotation_quaternion.copy())
 
 
 class Rig:
@@ -67,9 +80,11 @@ class Rig:
         return (self.F * f + self.U * u + self.L * l).normalized()
 
     def reset(self):
+        """Back to the imported (bind) pose, not identity: see capture_base."""
         for pb in self.arm.pose.bones:
-            pb.rotation_quaternion = Quaternion()
-            pb.location = Vector()
+            loc, rot = BASE[pb.name]
+            pb.rotation_quaternion = rot.copy()
+            pb.location = loc.copy()
         bpy.context.view_layer.update()
 
     def aim(self, key, d):
@@ -157,8 +172,8 @@ def clip_kneel(r):
             "Spine": (bow, 1, sway), "Spine1": (bow, 1, sway), "Spine2": (bow * 0.6, 1, 0), "Neck": (0.35 + bow, 1, 0), "Head": (0.4 + bow, 1, 0),
             "LeftArm": (0.45, -0.8, 0.25), "LeftForeArm": (0.7, 0.6, -0.5), "LeftHand": (0.4, 1, -0.2),
             "RightArm": (0.45, -0.8, -0.25), "RightForeArm": (0.7, 0.6, 0.5), "RightHand": (0.4, 1, 0.2),
-            "LeftUpLeg": (0.12, -1, 0.08), "LeftLeg": (-1, -0.12, 0), "LeftFoot": (-0.5, -0.9, 0),
-            "RightUpLeg": (0.12, -1, -0.08), "RightLeg": (-1, -0.12, 0), "RightFoot": (-0.5, -0.9, 0),
+            "LeftUpLeg": (0.12, -1, 0.08), "LeftLeg": (-1, -0.12, 0), "LeftFoot": (-1, -0.15, 0),
+            "RightUpLeg": (0.12, -1, -0.08), "RightLeg": (-1, -0.12, 0), "RightFoot": (-1, -0.15, 0),
         }))
     return keys
 
@@ -170,7 +185,7 @@ def clip_hunch(r):
     frames = [0, 10, 12, 26, 28, 40, 54]
     for fr, (jerk, armj, legj) in zip(frames, poses):
         keys.append((fr, {
-            "hips": (r.leg * 0.12, 0.0),
+            "hips": (r.leg * 0.06, 0.0),
             "Spine": (0.55, 1, 0), "Spine1": (0.6, 1, jerk * 0.3), "Spine2": (0.5, 1, 0), "Neck": (0.9, 0.5, jerk), "Head": (0.9, 0.2 - abs(jerk) * 0.5, jerk * 1.2),
             "LeftArm": (0.35, -1, 0.22 + armj), "LeftForeArm": (0.45, -1, 0.05),
             "RightArm": (0.3, -1, -0.22), "RightForeArm": (0.4 + armj, -1, -0.05 - armj),
@@ -201,7 +216,53 @@ def clip_run(r):
     return [(0, contact), (4, passing), (8, mirror(contact)), (12, mirror(passing)), (16, contact)]
 
 
-CLIPS = {"Grip": clip_grip, "Kneel": clip_kneel, "Hunch": clip_hunch, "Run": clip_run}
+def clip_idle(r):
+    """Standing, nervous: breathing, glancing around, arms held in."""
+    keys = []
+    for i, (look, lean) in enumerate([(0.0, 0.05), (0.45, 0.08), (0.1, 0.04), (-0.5, 0.08), (0.0, 0.05)]):
+        keys.append((i * 24, stand(**{
+            "Spine": (lean, 1, 0), "Spine1": (lean, 1, 0), "Neck": (0.1, 1, look * 0.6), "Head": (0.1, 1, look),
+            "LeftArm": (0.12, -1, 0.1), "LeftForeArm": (0.45, -0.8, -0.1),
+            "RightArm": (0.12, -1, -0.1), "RightForeArm": (0.45, -0.8, 0.1),
+        })))
+    return keys
+
+
+def clip_walk(r):
+    """Hurried walk cycle (24 frames = 1 s)."""
+    contact = {
+        "hips": (-r.leg * 0.05, 0.0),
+        "Spine": (0.1, 1, 0), "Spine1": (0.08, 1, 0), "Neck": (0.08, 1, 0), "Head": (0.1, 1, 0),
+        "LeftUpLeg": (0.4, -1, 0.03), "LeftLeg": (0.15, -1, 0), "LeftFoot": (1, -0.25, 0),
+        "RightUpLeg": (-0.3, -1, -0.03), "RightLeg": (-0.5, -1, 0), "RightFoot": (0.5, -1, 0),
+        "RightArm": (0.3, -1, -0.12), "RightForeArm": (0.5, -0.7, -0.05),
+        "LeftArm": (-0.25, -1, 0.12), "LeftForeArm": (0.15, -1, 0.05),
+    }
+    passing = {
+        "hips": (0.0, 0.0),
+        "Spine": (0.1, 1, 0), "Spine1": (0.08, 1, 0), "Neck": (0.08, 1, 0), "Head": (0.1, 1, 0),
+        "LeftUpLeg": (0.0, -1, 0.03), "LeftLeg": (0.0, -1, 0), "LeftFoot": (1, -0.4, 0),
+        "RightUpLeg": (0.3, -1, -0.03), "RightLeg": (-0.6, -1, 0), "RightFoot": (0.6, -1, 0),
+        "RightArm": (0.05, -1, -0.12), "RightForeArm": (0.3, -0.9, -0.05),
+        "LeftArm": (0.0, -1, 0.12), "LeftForeArm": (0.3, -0.9, 0.05),
+    }
+    return [(0, contact), (6, passing), (12, mirror(contact)), (18, mirror(passing)), (24, contact)]
+
+
+def clip_wave(r):
+    """The cage door is open: waving the player in with the right arm overhead, calling for help."""
+    keys = []
+    for i, sway in enumerate([0.0, 0.55, -0.1, 0.55, 0.0]):
+        keys.append((i * 8, stand(**{
+            "Spine": (-0.05, 1, 0), "Spine1": (-0.05, 1, 0.05), "Neck": (0.0, 1, 0.1), "Head": (-0.15, 1, 0.1),
+            "RightArm": (0.25, 1, -0.55), "RightForeArm": (0.15, 1, -0.2 + sway), "RightHand": (0.1, 1, -0.2 + sway * 1.2),
+            "LeftArm": (0.35, -1, 0.2), "LeftForeArm": (0.8, 0.2, 0.0),
+        })))
+    return keys
+
+
+CLIPS = {"Grip": clip_grip, "Kneel": clip_kneel, "Hunch": clip_hunch, "Run": clip_run, "Idle": clip_idle,
+         "Walk": clip_walk, "Wave": clip_wave}
 
 
 def recolour_cream(img):
@@ -256,7 +317,10 @@ for name, (src, idle, recolour) in VARIANTS.items():
             recolour_cream(img)
             img.pack()
 
-    # Normalise: 1.70 m tall, feet on z=0, centred (measured on the deformed vertices; object bounds lie here)
+    # Normalise: 1.70 m tall, feet on z=0, centred (measured on the deformed vertices; object bounds lie here).
+    # Measured in the imported pose, which Rig.reset() restores (the importer keeps the root conversion and a 0.77 m
+    # hip offset in the pose bones; zeroing them, as a first version did, sank the feet below the floor).
+    capture_base(arm)
     bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
     vs = []
@@ -275,7 +339,8 @@ for name, (src, idle, recolour) in VARIANTS.items():
 
     rig = Rig(arm)
     arm.animation_data_create()
-    for clip in (idle, "Run"):
+    arm.animation_data.use_nla = False  # author each clip alone (stashed clips would otherwise leak into its keys)
+    for clip in [*idle, "Idle", "Walk", "Run"]:
         act = bpy.data.actions.new(clip)
         act.use_fake_user = True
         arm.animation_data.action = act

@@ -75,10 +75,14 @@ left hand on the barrel shroud (its foregrip block is below the bottom of the sc
 ## Captives (`public/models/captives/`)
 Three civilians in the cage (CC BY, Himanshuvaid; credited from `data/assets.json`). Their Mixamo rigs came without
 usable animation, so `tools/blender/build_captives.py` authors the clips (limb directions per key pose, aimed bone by
-bone): `blue` Grip + Run, `white` (the blue model, kurta recoloured cream) Kneel + Run, `red` Hunch + Run. It also
-drops a stray unskinned icosphere, decimates to ~12k tris and normalises to 1.70 m with the feet at the origin. Raw
+bone): `blue` Grip + Wave, `white` (the blue model, kurta recoloured cream) Kneel, `red` Hunch; all three also Idle,
+Walk and Run (following the player). Poses are built from the imported (bind) pose, not identity (the importer keeps
+a 0.77 m hip offset in the pose bones), and each clip is authored with the NLA muted so stashed clips can't leak into
+its keys. It also drops the importer's bone-display icosphere, decimates to ~12k tris and normalises to 1.70 m with
+the feet at the origin. Raw
 exports go to `art/_public_backup/models/captives/`, then `optimize_glb.mjs` (≈0.3 MB each). Runtime:
-`src/engine/babylon/Captives.ts` (conversion beam and red glow on the half-converted man; the escape run).
+`src/engine/babylon/Captives.ts` (conversion beam, tint and vein glow on the half-converted man; waving once the
+door opens; once freed they follow the player's footpath to the extraction point, staggered where the nav grid has room).
 
 Runtime presence (all models): lower roughness plus a thin clear coat (wet look), a faint blood-red glow (the albedo
 reused as emissive), glowing eyes (`eyes` material names) and the enemy's tell/flash colour on top. Single-clip
