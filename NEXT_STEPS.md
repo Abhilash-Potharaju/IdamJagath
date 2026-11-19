@@ -8,7 +8,7 @@
 cd ~/Desktop/StartUpIdeas/idam-jagath
 git status            # see section 1: there may be uncommitted work from the polish agents
 npm run dev           # → http://localhost:5173  (?explore = no monsters, ?zoo = frozen monsters)
-npm test              # 21 core unit tests
+npm test              # 27 core unit tests
 ```
 Then tell Claude: *"Resume Idam Jagath from NEXT_STEPS.md."*
 
@@ -56,6 +56,14 @@ Run as parallel agents, each with separate file ownership.
 - **Climbable:** a doorway in one or more legs; a **spiral staircase inside** (visible steps plus an invisible smooth ramp collider, the industry-standard approach); a walkable roof terrace and upper gallery with railing colliders. The legs must be rebuilt hollow in Blender (the Sketchfab model's legs are solid).
 - Update the collisions, the lightmap bake, `data/level/level1.json` anchors and the stuck test.
 - **⚠️ Decision needed from the owner: what's on top?** (a) a sniper vantage point for the Warden fight, (b) a mission objective (a pylon or the captives), or (c) the secret.
+
+### E. Round 3 (2026-11-19) DONE: Warden pathfinding + smaller Warden + door gate; captives as people; first-person arms; short-lived corpses. See PROJECT.md.
+Suggested next (proposed to the owner, not yet approved):
+- **Mutated-human monsters** (fits the story: aliens convert people). Sketchfab has almost nothing usable (franchise-styled or broken), so generate with Meshy (text→3D + rig + animate): needs `MESHY_API_KEY` in `.env.local` (owner to provide). Start with the Spitter (the "green monster"): swollen hunched human with a glowing growth as the weak spot; then the Crawler (backward-bent human on all fours). Same gameplay, model swap only.
+- **Sound atmosphere:** player footsteps (stone/metal), city ambience, the ambush alarm, stair-shaft reverb.
+- **World storytelling:** half-converted humans in pods near the cage, conversion goo.
+- Load time (11 MB bundle), crawler eye weak spot + death clips, lightmap polish, difficulty levels, restart without reload.
+- Arms: hands are static during reload (could animate the left hand to the mag); other monsters could use the nav grid (crawlers in corners).
 
 ## 3. Other backlog
 - **Unreproduced (owner, 2026-11-19): a crawler froze mid-attack.** In the left lane near the pylon closest to the start (crawler spawns around (-28, 22) / (-33, 26)), it stopped while attacking the player: glowing (a tell) but doing nothing. Seen once. Suspects: the Crawler state machine stuck in windup/lunge/recover (e.g. a lunge blocked by a wall or pocket filler, or a `canReach` false loop), the depenetration pushing it back every step, or B's hurt reaction / C's windup crouch pose holding while the core moves on. If it repeats: note where, the weapon used and whether it was hit; then log `state`, `tell`, `pos` of the stuck enemy via `__game.enemies`.
