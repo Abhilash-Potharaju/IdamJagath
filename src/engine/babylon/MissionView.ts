@@ -7,6 +7,7 @@ import type { Level } from "../../game/Level";
 import { place } from "../../game/Props";
 import { HEMI_COLOR } from "../../game/Environment";
 import { burst } from "./fx";
+import { Captives } from "./Captives";
 import type { HUD } from "./HUD";
 import { setTarget, toV3, type DamageFn } from "./convert";
 
@@ -24,7 +25,7 @@ export class MissionView {
   private readonly hemi: HemisphericLight;
   private readonly modelJobs: Promise<unknown>[];
   private pickupMeshes: Mesh[] = [];
-  private captives: Mesh[] = [];
+  private captives!: Captives;
   private beacon!: Mesh;
   private globs = new Map<number, Mesh>();
   private pylonParts: { mesh: Mesh; beam: Mesh; light: PointLight; obs: unknown }[] = [];
@@ -41,7 +42,8 @@ export class MissionView {
     this.buildPylons(damage);
     this.buildPickups();
     setTarget(level.secretWall, { kind: "secretWall", id: 0, mul: 1 }, damage);
-    this.buildCaptives();
+    this.captives = new Captives(scene);
+    modelJobs.push(this.captives.ready);
     this.buildBeacon();
 
     const ev = world.events;
@@ -60,8 +62,7 @@ export class MissionView {
       door.dispose();
     });
     ev.on("captivesFreed", () => {
-      for (const c of this.captives) burst(scene, c.position.clone(), "#3dff8a", 2, 0.5);
-      for (const c of this.captives) c.dispose();
+      this.captives.freeAll();
       this.beacon.setEnabled(true);
       this.pad.visibility = 1;
     });
@@ -145,19 +146,6 @@ export class MissionView {
         m.position.set(k.pos.x, 1, k.pos.z);
         this.pickupMeshes[k.index] = m;
       }
-    }
-  }
-
-  private buildCaptives(): void {
-    const m = new StandardMaterial("captive", this.scene);
-    m.diffuseColor = Color3.FromHexString("#c79a6b");
-    m.emissiveColor = Color3.FromHexString("#2a1530");
-    for (const [x, z] of [[-2.5, 103], [0, 104.5], [2.5, 102.5]]) {
-      const c = MeshBuilder.CreateCapsule("captive", { height: 1.7, radius: 0.3 }, this.scene);
-      c.position.set(x, 0.85, z);
-      c.material = m;
-      c.isPickable = false;
-      this.captives.push(c);
     }
   }
 

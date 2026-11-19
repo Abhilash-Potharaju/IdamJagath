@@ -63,6 +63,14 @@ eye materials and kept procedural parts are set in `data/gameplay/enemies.json` 
 | `alien_quadruped.glb` | Spitter | "alien monster", victory_ | 81k | 0.64 MB | walk |
 | `cyclops_brute.glb` | Warden | ["Cyclops Rig"](https://sketchfab.com/3d-models/cyclops-rig-e5cc86878c314f5bae6d7268bb7541d9), SuperKapoo913 | 11k | 0.95 MB (raw 5.2 MB) | idle; stride, roar, charge lean, stun slump, drop tuck and landing crouch are layered procedurally on its named skeleton (`WardenView.poseModel`) |
 
+## Captives (`public/models/captives/`)
+Three civilians in the cage (CC BY, Himanshuvaid; credited from `data/assets.json`). Their Mixamo rigs came without
+usable animation, so `tools/blender/build_captives.py` authors the clips (limb directions per key pose, aimed bone by
+bone): `blue` Grip + Run, `white` (the blue model, kurta recoloured cream) Kneel + Run, `red` Hunch + Run. It also
+drops a stray unskinned icosphere, decimates to ~12k tris and normalises to 1.70 m with the feet at the origin. Raw
+exports go to `art/_public_backup/models/captives/`, then `optimize_glb.mjs` (≈0.3 MB each). Runtime:
+`src/engine/babylon/Captives.ts` (conversion beam and red glow on the half-converted man; the escape run).
+
 Runtime presence (all models): lower roughness plus a thin clear coat (wet look), a faint blood-red glow (the albedo
 reused as emissive), glowing eyes (`eyes` material names) and the enemy's tell/flash colour on top. Single-clip
 models also crouch/rear in a windup, stretch into a lunge and breathe (generic, from the core state).

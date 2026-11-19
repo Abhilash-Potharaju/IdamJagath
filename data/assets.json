@@ -1601,6 +1601,30 @@
    "credit_required": false,
    "in_game": true,
    "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_crack, vajra_body (public/audio/fs/)"
+  },
+  "models/captives/blue.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/indian-man-with-blue-clothes-7cdbd4f668524e42982acb09cba57152",
+   "author": "Himanshuvaid",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Indian man with blue clothes",
+   "credit_order": 19,
+   "in_game": true,
+   "notes": "Captive. modified: decimated, normalised, hand-authored Grip/Run animation clips (tools/blender/build_captives.py); models/captives/white.glb is the same model with the kurta recoloured cream (Kneel/Run clips)"
+  },
+  "models/captives/red.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/indian-man-with-red-clothes-3f6bb2c1c9e743febfd970f795192504",
+   "author": "Himanshuvaid",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "indian-man-with-red-clothes",
+   "credit_order": 20,
+   "in_game": true,
+   "notes": "Captive (half-converted). modified: decimated, normalised, hand-authored Hunch/Run animation clips (tools/blender/build_captives.py); red glow added at runtime"
   }
  }
 }
