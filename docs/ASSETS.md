@@ -4,6 +4,11 @@ Masters live in `art/` (library sources, .blend files). `public/` holds the **we
 Pristine pre-optimization copies of `public/` are kept in `art/_public_backup/` (git-ignored); every optimizer reads
 from there, so the pipeline is re-runnable and reversible (copy the backup back to undo).
 
+
+> **Licence rule (owner, 2026-11-19): CC0, CC BY (credited) or self-made only.** Never ambiguous or
+> redistribution-restricting licences, such as Sketchfab "Free Standard"/Standard, Editorial, NC, ND, "royalty-free"
+> store licences, personal-use-only, custom/unclear or unlicensed. The repo is public, so every asset in it is
+> redistributed. Details: `CLAUDE.md`.
 ## Pipeline (`npm run assets:optimize`)
 | Step | Script | What it does |
 |---|---|---|

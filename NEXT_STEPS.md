@@ -79,7 +79,11 @@ Suggested next (proposed to the owner, not yet approved):
 ## 4. Conventions to keep
 - **Data-driven:** tuning goes in `data/gameplay/*.json`, layout/props in `data/level/level1.json`, assets and licenses in `data/assets.json`. Credits on the start screen are generated from the manifest.
 - **Core vs engine:** `src/core/` has no Babylon/DOM imports, uses fixed dt and the seeded RNG; only `src/engine/babylon/` touches Babylon.
-- **Assets:** prefer Poly Haven/ambientCG (CC0) → Sketchfab (CC0/CC BY, license verified via API) → Meshy/fal (AI) → Blender scripts. No NC/ND/editorial or ripped models.
-  - **No Sketchfab "Free Standard" (or any Standard-licence) models while the repo is public** (checked 2026-11-19). Its terms (sketchfab.com/licenses, §2.2) forbid making the model "available as a stand-alone file" or "in a manner intended to allow or invite a third party to download" it, and a public repo does exactly that. (A saree-woman model was tried and removed from history for this reason.) CC0 / CC BY only; CC BY credits go in `data/assets.json`.
+- **Assets:** prefer Poly Haven/ambientCG (CC0) → Sketchfab (CC0/CC BY, license verified via API) → Meshy/fal (AI) → Blender scripts.
+  - **Licences: CC0, CC BY or self-made only. Never ambiguous or redistribution-restricting licences** (owner's rule,
+    2026-11-19): no Sketchfab "Free Standard"/Standard, Editorial, NC, ND, store "royalty-free", personal-use-only,
+    custom/unclear or unlicensed, nor ripped/franchise models or real-person likenesses. If unsure, don't use it. See
+    `CLAUDE.md`. (A Free Standard saree-woman model was tried and purged from history: its terms forbid making the model
+    available as a stand-alone file, which the public repo does.)
 - **Testing:** headless checks via `tools/dev/cdp.mjs` (it deletes its own Chrome profile). Take screenshots only when needed to verify, and delete them afterwards. Re-run `stuck_test.js` after any collision or level change.
 - **Commits:** commit after each verified step; the owner playtests before big moves.
