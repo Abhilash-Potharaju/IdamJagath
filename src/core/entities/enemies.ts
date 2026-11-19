@@ -123,12 +123,35 @@ export abstract class Enemy {
     this.yaw += Math.max(-turnRate * dt, Math.min(turnRate * dt, d));
   }
 
+  /**
+   * Guard post (e.g. the Charminar roof guards): while the player is on another floor the guard stays at its post
+   * instead of chasing the player's horizontal position (which crowded them on the roof right above the stair shaft).
+   */
+  post: Vec3 | null = null;
+
+  /** True while a guard should hold its post: the player isn't on its floor. */
+  holdingPost(): boolean {
+    if (!this.post) return false;
+    const myFeet = this.pos.y - this.halfHeight, theirFeet = this.ctx.player.pos.y - 0.9;
+    return Math.abs(myFeet - theirFeet) > 0.8; // stricter than canReach: engage only once the player is out on the roof
+  }
+
   update(dt: number): void {
     if (!this.alive) return;
     this.hurtSndCd -= dt;
     if (!this.awake && this.seesPlayer()) this.awake = true;
-    if (this.awake) this.think(dt);
+    if (this.awake && this.holdingPost()) this.returnToPost(dt);
+    else if (this.awake) this.think(dt);
     else this.idle(dt);
+  }
+
+  /** Walk back to the post, then stand facing the player. */
+  protected returnToPost(dt: number): void {
+    this.tell = "none";
+    const d = this.post!.subtract(this.pos);
+    d.y = 0;
+    if (d.length() > 0.6) { const dir = d.normalize(); this.move(dir, 2.5, dt); this.face(dir, dt); }
+    else this.face(this.dirToPlayer(), dt, 3);
   }
 
   protected idle(_dt: number): void {}

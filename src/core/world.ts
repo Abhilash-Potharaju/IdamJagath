@@ -125,6 +125,7 @@ export class GameWorld implements EnemyContext {
     const e = sp.type === "crawler" ? new Crawler(this, at, E.crawler)
       : sp.type === "spitter" ? new Spitter(this, at, E.spitter) : new Warden(this, at, E.warden);
     if (awake) e.awake = true;
+    if (sp.guard) e.post = e.pos.clone();
     this.enemies.push(e);
     this.events.emit("enemySpawned", { id: e.id, type: e.type, body: e.body });
     return e;

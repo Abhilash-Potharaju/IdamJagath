@@ -120,6 +120,22 @@ describe("player movement", () => {
   });
 });
 
+describe("guard posts", () => {
+  it("an awake roof guard holds its post while the player is on another floor, and engages on the same floor", () => {
+    const { world } = makeWorld({ explore: true });
+    run(world, 0.5);
+    const p = world.player.pos;
+    const post = { x: p.x + 6, z: p.z };
+    const g = world.spawn({ type: "crawler", at: [post.x, post.z], y: 6, guard: true }, true);
+    run(world, 2, () => input({}));
+    expect(Math.hypot(g.pos.x - post.x, g.pos.z - post.z)).toBeLessThan(0.7); // stayed put, didn't come overhead
+    const c = world.spawn({ type: "crawler", at: [p.x + 6, p.z + 2], guard: true }, true); // same floor as the player
+    const start = Math.hypot(c.pos.x - p.x, c.pos.z - p.z);
+    run(world, 0.5, () => input({}));
+    expect(Math.hypot(c.pos.x - p.x, c.pos.z - p.z)).toBeLessThan(start - 1); // chases
+  });
+});
+
 describe("melee reach", () => {
   it("a crawler on a higher floor right above the player cannot bite", () => {
     const { world } = makeWorld({ explore: true });

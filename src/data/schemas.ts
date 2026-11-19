@@ -100,7 +100,11 @@ export interface WardenData extends EnemyBase {
 export interface EnemiesFile { crawler: CrawlerData; spitter: SpitterData; warden: WardenData }
 
 export type EnemyType = "crawler" | "spitter" | "warden";
-export interface Spawn { type: EnemyType; at: [number, number]; /** floor height (m) for elevated spawns, e.g. the Charminar roof */ y?: number }
+export interface Spawn {
+  type: EnemyType; at: [number, number];
+  /** floor height (m) for elevated spawns, e.g. the Charminar roof */ y?: number;
+  /** hold this spot until the player is on the same floor (roof guards around the pylon) */ guard?: boolean;
+}
 
 export interface MissionData {
   id: string;
