@@ -39,7 +39,7 @@ Run as parallel agents, each with separate file ownership.
 - Impacts on flesh and stone, a heavier kill-confirm, monster vocals (growls, screams, death cries), Warden footsteps and roar.
 - Pipeline: search → download previews (HQ ogg/mp3) → trim and normalise → AAC in `public/audio/` → update `public/audio/manifest.json`. Audio.ts already plays files with fallback to the synth.
 
-### B. ~~Mature kill and death presentation~~ DONE 2026-11-19 (`Corpses.ts`). Open: roof corpses dip through the slab while sinking.
+### B. ~~Mature kill and death presentation~~ DONE 2026-11-19 (`Corpses.ts`). Bodies now rest ~2.5 s, then fade in place (gone ~4.5 s after the kill; no more dipping through the roof slab). Tuning: `CORPSE` in Corpses.ts.
 - Remove the purple death "puff". Monsters stagger, then **collapse with momentum** in the shot direction (ragdoll-like), twitch, and **alien ichor** pools under them. Corpses stay about 5–10 s, then sink and fade.
 - Trishul knockback on kill; headshot/weak-spot kills show a distinct reaction; subtle hit-stop/camera punch on kills.
 - Hit reactions depend on where the monster is hit.

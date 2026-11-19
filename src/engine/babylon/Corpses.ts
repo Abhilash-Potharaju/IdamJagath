@@ -8,7 +8,7 @@ import { Fx, ichorPoolMaterial } from "./fx";
  * A dying enemy's root is re-parented under a pivot at its body centre. A scripted physical fall then plays:
  * a short stagger along the shot, legs give out (the body squashes), it topples or rolls along the shot with some
  * slide, rests on the ground (never through it: its bind-pose bounding box is kept above the floor every frame),
- * twitches a couple of times while an ichor pool spreads under it, then sinks into the ground, fades and is disposed.
+ * twitches while an ichor pool spreads under it, then (after ~2.5 s) settles slightly and fades out, and is disposed.
  */
 
 /** Per-type death tuning. Angles in rad, distances in m, times in s. */
@@ -34,18 +34,20 @@ export interface DeathProfile {
 
 export const CORPSE = {
   /** Corpses kept at once; beyond this the oldest sinks away early. */
-  max: 8,
-  /** Seconds a corpse stays on the ground (after landing) before it sinks. */
-  linger: 7,
-  /** Seconds to sink into the ground and fade out. */
-  sink: 1.6,
-  /** Early sink when evicted by the cap. */
-  evictSink: 0.5,
+  max: 6,
+  /** Seconds a corpse stays on the ground (after landing) before it fades: long enough to read the kill, short enough not to clutter. */
+  linger: 2.5,
+  /** Seconds to settle a little and fade out. */
+  sink: 0.9,
+  /** How far (m) it settles into the floor while fading; kept shallow so it never pokes out under the thin roof slab. */
+  sinkDepth: 0.15,
+  /** Early fade when evicted by the cap. */
+  evictSink: 0.4,
   /** Presentation-only hit-stop: the corpse holds its impact pose this long (s). */
   hitStop: 0.045,
   weakHitStop: 0.07,
   /** Seconds for the pool to spread to full size. */
-  poolGrow: 3.2,
+  poolGrow: 1.6,
 };
 const NO_HITSTOP = new URLSearchParams(location.search).has("nohitstop");
 
@@ -179,7 +181,7 @@ class Corpse {
 
     // The killing blow: spray from the wound (weak spot / heavy = much more)
     Fx.for(scene).killSpray(info.hit, dir.add(new Vector3(0, 0.25, 0)).normalize(), info.weak ? 2.4 : strength ? 1.7 : 0.8);
-    this.twitches = [0.35 + Math.random() * 0.5, 1.3 + Math.random() * 1.2, ...(Math.random() < 0.5 ? [2.8 + Math.random()] : [])];
+    this.twitches = [0.3 + Math.random() * 0.4, ...(Math.random() < 0.6 ? [1.1 + Math.random() * 0.8] : [])]; // within the linger
   }
 
   /** Cap eviction: sink away soon. */
@@ -248,8 +250,8 @@ class Corpse {
     const rest = this.groundY - minY - 0.02 * limp; // settle a touch into soft ground as it goes limp
     if (t >= this.sinkAt) {
       const k = Math.min(1, (t - this.sinkAt) / this.sinkDur);
-      this.pivot.position.y = rest - this.height * 0.9 * k * k;
-      const vis = 1 - smooth((k - 0.3) / 0.7); // sinks first, then fades
+      this.pivot.position.y = rest - Math.min(CORPSE.sinkDepth, this.height * 0.3) * k;
+      const vis = 1 - smooth(k / 0.85); // fades in place (a deep sink went through the roof slab)
       for (const mm of this.meshes) if (!mm.isDisposed()) mm.visibility = vis;
       if (this.pool) this.pool.visibility = vis;
       if (k >= 1) this.dispose();
