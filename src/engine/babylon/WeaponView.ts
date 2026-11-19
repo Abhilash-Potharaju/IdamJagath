@@ -61,6 +61,8 @@ const PROCEDURAL_MESHES: Record<string, (scene: Scene) => Mesh> = {
 };
 
 const BASE_X = 0.2, BASE_Y = -0.17, BASE_Z = 0.45;
+/** ?noarms: floating gun as before (A/B the first-person arms). */
+const NO_ARMS = new URLSearchParams(location.search).has("noarms");
 
 /** One gun's visuals: its mesh (procedural fallback, swapped for the detailed model) and muzzle flash. */
 class GunVisual {
@@ -86,6 +88,25 @@ class GunVisual {
     this.flash.setEnabled(false);
     this.mesh.setEnabled(false);
     if (w.model) this.loadModel(scene, w.model);
+    if (w.arms && !NO_ARMS) this.loadArms(scene, w.arms);
+  }
+
+  /** First-person arms, posed on this gun in its model frame: parented like the model, so they share all its motion. */
+  private async loadArms(scene: Scene, file: string): Promise<void> {
+    try {
+      const m = await place(scene, `weapons/${file}`, Vector3.Zero(), 0);
+      m.root.parent = this.mesh;
+      m.root.position.setAll(0);
+      const glow = scene.getGlowLayerByName("glow");
+      for (const mesh of m.meshes) {
+        mesh.isPickable = false;
+        mesh.renderingGroupId = 1;
+        mesh.receiveShadows = false;
+        glow?.addExcludedMesh(mesh as Mesh);
+      }
+    } catch (e) {
+      console.warn(`[weapon] arms ${file} failed to load`, e);
+    }
   }
 
   /** Swap the procedural gun for the detailed model once it has loaded (motion animates the same root). */

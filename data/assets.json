@@ -1625,6 +1625,18 @@
    "credit_order": 20,
    "in_game": true,
    "notes": "Captive (half-converted). modified: decimated, normalised, hand-authored Hunch/Run animation clips (tools/blender/build_captives.py); red glow added at runtime"
+  },
+  "models/weapons/arms_ar_h470.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/fp-arms-06ee1407117d4e5ab343becb4ee44bb6",
+   "author": "bumstrum",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "FP arms",
+   "credit_order": 21,
+   "in_game": true,
+   "notes": "First-person arms. modified: posed onto each gun and baked (tools/blender/build_fp_arms.py); models/weapons/arms_rl0n_25.glb is the same model posed on the Trishul"
   }
  }
 }

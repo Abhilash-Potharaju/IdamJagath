@@ -7,7 +7,7 @@
       "damage": 20, "pellets": 1, "spread": 0.012, "range": 150,
       "kick": 0.006, "kickBack": 0.9, "kickClimb": 3.2,
       "flashColor": "#ffbf6b", "sound": "vajra_fire",
-      "model": "ar_h470.glb", "modelCredit": "\"AR-H470\" by Frostoise, CC BY 4.0", "muzzle": 0.44,
+      "model": "ar_h470.glb", "arms": "arms_ar_h470.glb", "modelCredit": "\"AR-H470\" by Frostoise, CC BY 4.0", "muzzle": 0.44,
       "proceduralMesh": "vajra"
     },
     {
@@ -16,7 +16,7 @@
       "damage": 11, "pellets": 9, "spread": 0.09, "range": 45,
       "kick": 0.035, "kickBack": 2.4, "kickClimb": 9,
       "flashColor": "#6bfff0", "sound": "trishul_fire",
-      "model": "rl0n_25.glb", "modelCredit": "\"RL0N-25\" by Frostoise, CC BY 4.0", "muzzle": 0.5,
+      "model": "rl0n_25.glb", "arms": "arms_rl0n_25.glb", "modelCredit": "\"RL0N-25\" by Frostoise, CC BY 4.0", "muzzle": 0.5,
       "proceduralMesh": "trishul"
     }
   ]

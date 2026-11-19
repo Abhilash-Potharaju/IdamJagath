@@ -23,6 +23,8 @@ export interface WeaponData {
   sound: string;
   model?: string;
   modelCredit?: string;
+  /** First-person arms posed on this gun (tools/blender/build_fp_arms.py), placed in the gun model's frame. */
+  arms?: string;
   muzzle: number;
   proceduralMesh: string;
 }
@@ -173,7 +175,7 @@ const spawn: Spec = { type: S, at: "xz" };
 const SPECS = {
   weapons: { weapons: [{
     id: S, name: S, mag: N, fireInterval: N, reloadTime: N, damage: N, pellets: N, spread: N, range: N,
-    kick: N, kickBack: N, kickClimb: N, flashColor: S, sound: S, model: "optString", muzzle: N, proceduralMesh: S,
+    kick: N, kickBack: N, kickClimb: N, flashColor: S, sound: S, model: "optString", arms: "optString", muzzle: N, proceduralMesh: S,
   }] } as Spec,
   player: {
     maxHealth: N, overchargeCap: N, collisionHalfExtents: "number3", gravity: N, walkSpeed: N, sprintSpeed: N,

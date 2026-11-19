@@ -63,6 +63,15 @@ eye materials and kept procedural parts are set in `data/gameplay/enemies.json` 
 | `alien_quadruped.glb` | Spitter | "alien monster", victory_ | 81k | 0.64 MB | walk |
 | `cyclops_brute.glb` | Warden | ["Cyclops Rig"](https://sketchfab.com/3d-models/cyclops-rig-e5cc86878c314f5bae6d7268bb7541d9), SuperKapoo913 | 11k | 0.95 MB (raw 5.2 MB) | idle; stride, roar, charge lean, stun slump, drop tuck and landing crouch are layered procedurally on its named skeleton (`WardenView.poseModel`) |
 
+## First-person arms (`public/models/weapons/arms_*.glb`)
+"FP arms" by bumstrum (CC BY; credited from `data/assets.json`), posed onto each gun by
+`tools/blender/build_fp_arms.py`: shoulders placed relative to the game camera (forward, just under the view: the usual
+viewmodel cheat), two-bone IK to each wrist, hands turned to a grip frame with the knuckles nudged onto the grip
+point, fingers curled; then baked to a static mesh in the gun model's own frame. `weapons.json` → `arms`; WeaponView
+places it exactly like the gun model under the same root, so it shares all recoil/sway/reload motion and the scope
+fade. `?noarms` shows the floating gun. Vajra: right hand on the raked grip, left hand clamping the forend; Trishul:
+left hand on the barrel shroud (its foregrip block is below the bottom of the screen).
+
 ## Captives (`public/models/captives/`)
 Three civilians in the cage (CC BY, Himanshuvaid; credited from `data/assets.json`). Their Mixamo rigs came without
 usable animation, so `tools/blender/build_captives.py` authors the clips (limb directions per key pose, aimed bone by
