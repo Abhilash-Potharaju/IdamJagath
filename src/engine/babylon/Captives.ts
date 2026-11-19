@@ -1,6 +1,6 @@
 import {
   type AbstractMesh, type AnimationGroup, Color3, Constants, DynamicTexture, LoadAssetContainerAsync, MeshBuilder, PBRMaterial,
-  PointLight, type Scene, StandardMaterial, TransformNode, Vector3,
+  PointLight, Quaternion, type Scene, StandardMaterial, TransformNode, Vector3,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import "../../game/Props"; // configures the locally hosted meshopt decoder before any model loads
@@ -11,11 +11,12 @@ import { GAMEPLAY } from "../../data/gameplay";
  * The captives in the Charminar cage (presentation only; the core just knows "cage opened" and "captives freed", and
  * monsters never target them, so they can't be hurt).
  *
- * Three Hyderabadi civilians (tools/blender/build_captives.py). Caged: one grips the energy door, one kneels and
- * pleads, one is half-converted: grey-green skin with glowing alien veins, hunched and twitching under a violet
- * conversion beam. When the door opens, the man at the door waves the player in. When the player walks in, the beam
+ * Four different Hyderabadis (tools/blender/build_captives.py). Caged: a man in a kurta grips the energy door, a
+ * woman kneels and pleads, a teenager cowers, and a bearded man in a hoodie is half-converted: deformed (swollen,
+ * elongated arm), grey-green skin with glowing alien veins and red eyes, dark growths breaking out of him, hunched and
+ * twitching under a violet conversion beam. When the door opens, the man at the door waves the player in. When the player walks in, the beam
  * dies, the conversion drains out of the third man, and all three follow the player to the extraction point: they
- * walk the player's own footpath (so never through walls), 2.4 / 3.6 / 4.8 m behind, standing when the player stops.
+ * walk the player's own footpath (so never through walls), 2.4–5.4 m behind, standing when the player stops.
  */
 
 interface CaptiveSpec {
@@ -35,8 +36,9 @@ interface CaptiveSpec {
 
 const SPECS: CaptiveSpec[] = [
   { file: "blue.glb", idle: "Grip", doorOpen: "Wave", at: [-0.9, 100.85], yaw: Math.PI, follow: 2.4, side: 0.55 },
-  { file: "white.glb", idle: "Kneel", at: [1.15, 102.2], yaw: Math.PI - 0.25, follow: 3.5, side: -0.75 },
-  { file: "red.glb", idle: "Hunch", at: [0.15, 104.5], yaw: Math.PI, converted: true, follow: 4.6, side: 0.4 },
+  { file: "woman.glb", idle: "Kneel", at: [1.2, 101.9], yaw: Math.PI - 0.3, follow: 3.4, side: -0.7 },
+  { file: "teen.glb", idle: "Cower", at: [-1.5, 102.9], yaw: Math.PI + 0.5, follow: 4.4, side: 0.35 },
+  { file: "mutant.glb", idle: "Hunch", at: [0.3, 104.6], yaw: Math.PI, converted: true, follow: 5.4, side: -0.4 },
 ];
 const WALK_REF = 1.45;      // m/s the walk clip is authored for
 const RUN_REF = 4.0;        // m/s the run clip is authored for
@@ -44,7 +46,8 @@ const MAX_SPEED = 7.2;      // keeps up with a sprinting player
 const PERSONAL_SPACE = 1.6; // never closer to the player than this
 const TRAIL_STEP = 0.35;    // m between recorded footpath points
 const CONVERT_GLOW = new Color3(1.5, 0.12, 0.08);
-const CONVERT_TINT = new Color3(0.58, 0.66, 0.52); // sickly grey-green skin and cloth
+const CONVERT_TINT = new Color3(0.5, 0.6, 0.46); // sickly grey-green skin
+const EYE_GLOW = new Color3(1.6, 0.15, 0.05);
 const BLEND = 0.12;
 
 interface TrailPoint { p: Vector3; s: number }
@@ -53,7 +56,10 @@ interface Captive {
   spec: CaptiveSpec;
   root: TransformNode;
   meshes: AbstractMesh[];
-  mats: PBRMaterial[];
+  /** Converted man: skin materials (tint + veins), eyes (glow), alien spikes (shrink away once free). */
+  skin: PBRMaterial[];
+  eyes: PBRMaterial[];
+  spikes: AbstractMesh[];
   clips: Map<string, AnimationGroup>;
   current?: AnimationGroup;
   mode: "caged" | "joining" | "following";
@@ -96,16 +102,18 @@ export class Captives {
     root.position.set(spec.at[0], 0, spec.at[1]);
     root.rotation.y = spec.yaw;
     const meshes = root.getChildMeshes(false);
-    const mats: PBRMaterial[] = [];
+    const skin: PBRMaterial[] = [], eyes: PBRMaterial[] = [];
     for (const m of meshes) {
       m.isPickable = false; // bullets pass; the people are never targets
       m.receiveShadows = true;
-      if (m.material instanceof PBRMaterial) {
-        if (spec.converted) m.material = m.material.clone(`${m.material.name}-converted`);
-        if (!mats.includes(m.material as PBRMaterial)) mats.push(m.material as PBRMaterial);
-      }
+      const mt = m.material;
+      if (!spec.converted || !(mt instanceof PBRMaterial)) continue;
+      // the avatar models keep skin, eyes and clothes in separate materials (each file has its own)
+      if (/Avatar(Body|Head)/i.test(mt.name) && !skin.includes(mt)) skin.push(mt);
+      else if (/Eyeball/i.test(mt.name) && !eyes.includes(mt)) eyes.push(mt);
     }
-    if (spec.converted) for (const mt of mats) { mt.emissiveTexture = veinTexture(this.scene); mt.albedoColor = CONVERT_TINT.clone(); }
+    for (const mt of skin) { mt.emissiveTexture = veinTexture(this.scene); mt.albedoColor = CONVERT_TINT.clone(); }
+    const spikes = spec.converted ? this.growSpikes(root, inst.skeletons[0]?.bones ?? []) : [];
     const clips = new Map<string, AnimationGroup>();
     for (const g of inst.animationGroups) {
       g.stop();
@@ -113,7 +121,7 @@ export class Captives {
       g.blendingSpeed = BLEND;
       clips.set(g.name.replace(/\.\d+$/, ""), g);
     }
-    const cap: Captive = { spec, root, meshes, mats, clips, mode: "caged", s: 0, freedT: 0, lat: 0 };
+    const cap: Captive = { spec, root, meshes, skin, eyes, spikes, clips, mode: "caged", s: 0, freedT: 0, lat: 0 };
     this.list.push(cap);
     const startClip = this.doorOpen && spec.doorOpen ? spec.doorOpen : spec.idle;
     this.play(cap, startClip, 0.9 + Math.random() * 0.2, true);
@@ -129,6 +137,47 @@ export class Captives {
     g.start(true, speed, randomStart ? g.from + Math.random() * (g.to - g.from) : g.from);
   }
 
+  /**
+   * Dark alien growths breaking out of the converted man: along his spine, his swollen right shoulder and mutated
+   * forearm, and the back of his skull. Parented to his bones, so they follow every twitch.
+   */
+  private growSpikes(root: TransformNode, bones: { name: string; getTransformNode(): TransformNode | null }[]): AbstractMesh[] {
+    const mat = new PBRMaterial("alien-growth", this.scene);
+    mat.albedoColor = Color3.FromHexString("#0b070c");
+    mat.metallic = 0.0;
+    mat.roughness = 0.45;
+    mat.emissiveColor = Color3.FromHexString("#200204");
+    const node = (re: RegExp) => bones.find((b) => re.test(b.name))?.getTransformNode() ?? null;
+    root.computeWorldMatrix(true);
+    const yaw = root.rotation.y;
+    const fwd = new Vector3(Math.sin(yaw), 0, Math.cos(yaw)), right = new Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), up = Vector3.Up();
+    const out: AbstractMesh[] = [];
+    const spike = (re: RegExp, at: Vector3, dir: Vector3, len: number, base: number) => {
+      const n = node(re);
+      if (!n) return;
+      n.computeWorldMatrix(true);
+      const m = MeshBuilder.CreateCylinder("alien-spike", { height: len, diameterTop: 0, diameterBottom: base, tessellation: 7 }, this.scene);
+      m.material = mat;
+      m.isPickable = false;
+      const d = dir.normalize();
+      m.rotationQuaternion = Quaternion.FromUnitVectorsToRef(Vector3.Up(), d, new Quaternion());
+      m.position.copyFrom(n.getAbsolutePosition().add(at).add(d.scale(len * 0.38)));
+      m.computeWorldMatrix(true);
+      m.setParent(n);
+      out.push(m);
+    };
+    const back = fwd.scale(-1);
+    for (const [y, x, l] of [[-0.05, 0.06, 0.22], [0.05, -0.07, 0.28], [0.14, 0.05, 0.2], [0.0, -0.01, 0.16]] as const) {
+      spike(/^Spine2/, up.scale(y).add(right.scale(x)).add(back.scale(0.1)), back.scale(0.8).add(up.scale(0.55)).add(right.scale(x * 3)), l, 0.06);
+    }
+    spike(/^RightShoulder/, up.scale(0.04), right.scale(0.6).add(up.scale(0.8)).add(back.scale(0.2)), 0.26, 0.07);
+    spike(/^RightArm/, up.scale(0.03), right.scale(0.8).add(up.scale(0.5)), 0.2, 0.06);
+    spike(/^RightForeArm/, right.scale(0.04), right.scale(0.7).add(back.scale(0.6)), 0.18, 0.05);
+    spike(/^RightForeArm/, right.scale(0.03).add(up.scale(-0.06)), right.scale(0.5).add(back.scale(0.5)).add(up.scale(-0.5)), 0.14, 0.04);
+    spike(/^Head_/, back.scale(0.08).add(up.scale(0.06)), back.scale(0.6).add(up.scale(0.8)), 0.13, 0.04);
+    return out;
+  }
+
   /** A violet conversion beam from the cage roof onto the half-converted captive. */
   private buildBeam(): void {
     const spec = SPECS.find((s) => s.converted)!;
@@ -137,8 +186,9 @@ export class Captives {
     mat.disableLighting = true;
     mat.alpha = 0.2;
     mat.alphaMode = Constants.ALPHA_ADD; // adds light over him instead of tinting him violet
-    const mesh = MeshBuilder.CreateCylinder("conversion-beam", { height: 3.2, diameterTop: 0.45, diameterBottom: 1.5, tessellation: 18, cap: 0 }, this.scene);
-    mesh.position.set(spec.at[0], 1.6, spec.at[1]);
+    // from the cage roof down onto his head and shoulders (enveloping his whole body washed him out to flat violet)
+    const mesh = MeshBuilder.CreateCylinder("conversion-beam", { height: 1.75, diameterTop: 0.3, diameterBottom: 0.85, tessellation: 18, cap: 0 }, this.scene);
+    mesh.position.set(spec.at[0], 3.2 - 1.75 / 2, spec.at[1] + 0.15);
     mesh.material = mat;
     mesh.isPickable = false;
     const light = new PointLight("conversion-light", new Vector3(spec.at[0], 2.4, spec.at[1] - 0.6), this.scene);
@@ -198,7 +248,7 @@ export class Captives {
     this.time += dt;
     const pulse = 0.65 + 0.35 * Math.sin(this.time * 5.3) * Math.sin(this.time * 1.7 + 1);
     if (this.beam) {
-      this.beam.mat.alpha = 0.22 + 0.12 * pulse;
+      this.beam.mat.alpha = 0.14 + 0.1 * pulse;
       this.beam.light.intensity = 1.1 + 0.6 * pulse;
     }
     if (this.freed && !this.done) {
@@ -211,9 +261,14 @@ export class Captives {
       // The conversion: alien-red veins pulse under grey-green skin; once free it drains out over 2.5 s
       if (c.spec.converted) {
         const k = c.mode === "caged" ? 1 : Math.max(0, 1 - c.freedT / 2.5);
-        for (const m of c.mats) {
+        for (const m of c.skin) {
           m.emissiveColor = CONVERT_GLOW.scale(k * pulse);
           m.albedoColor = Color3.Lerp(Color3.White(), CONVERT_TINT, k);
+        }
+        for (const m of c.eyes) m.emissiveColor = EYE_GLOW.scale(k * (0.7 + 0.3 * pulse));
+        if (c.spikes.length) {
+          for (const sp of c.spikes) sp.scaling.setAll(Math.max(0.001, k));
+          if (k <= 0) { for (const sp of c.spikes) sp.dispose(); c.spikes = []; }
         }
       }
       if (c.mode === "caged") continue;

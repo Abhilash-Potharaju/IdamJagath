@@ -73,16 +73,18 @@ fade. `?noarms` shows the floating gun. Vajra: right hand on the raked grip, lef
 left hand on the barrel shroud (its foregrip block is below the bottom of the screen).
 
 ## Captives (`public/models/captives/`)
-Three civilians in the cage (CC BY, Himanshuvaid; credited from `data/assets.json`). Their Mixamo rigs came without
-usable animation, so `tools/blender/build_captives.py` authors the clips (limb directions per key pose, aimed bone by
-bone): `blue` Grip + Wave, `white` (the blue model, kurta recoloured cream) Kneel, `red` Hunch; all three also Idle,
-Walk and Run (following the player). Poses are built from the imported (bind) pose, not identity (the importer keeps
-a 0.77 m hip offset in the pose bones), and each clip is authored with the NLA muted so stashed clips can't leak into
-its keys. It also drops the importer's bone-display icosphere, decimates to ~12k tris and normalises to 1.70 m with
-the feet at the origin. Raw
-exports go to `art/_public_backup/models/captives/`, then `optimize_glb.mjs` (≈0.3 MB each). Runtime:
-`src/engine/babylon/Captives.ts` (conversion beam, tint and vein glow on the half-converted man; waving once the
-door opens; once freed they follow the player's footpath to the extraction point, staggered where the nav grid has room).
+Four different Hyderabadis in the cage (CC BY; credited from `data/assets.json`): `blue` (kurta-pyjama, Himanshuvaid)
+grips the energy door, then waves the player in; `woman` (office woman, ar.jethin) kneels and pleads; `teen`
+(ar.jethin) cowers; `mutant` (bearded man in a hoodie, ar.jethin) is the half-converted one. `tools/blender/build_captives.py`
+authors the clips (limb directions per key pose, aimed bone by bone; the avatars keep their own motion-capture idle):
+Grip/Wave, Kneel, Cower, Hunch (with bone-scale deformation: swollen, elongated right arm, swollen back and shoulder),
+plus Idle/Walk/Run for following the player. Poses start from the imported (bind) pose (the importer keeps a hip
+offset in the pose bones) and each clip is authored with the NLA muted. The script also drops the importer's
+bone-display icosphere and the teeth, decimates (~6k tris per part, hair 10k), shrinks the avatars' maps to 512 and
+normalises each person's height with the feet at the origin. Raw exports go to `art/_public_backup/models/captives/`,
+then `optimize_glb.mjs` (0.4–1.0 MB each, 3.3 MB total). Runtime: `src/engine/babylon/Captives.ts` (conversion
+beam; the mutant's skin tint, vein glow, red eyes and growths, which drain/shrink away once freed; waving once the door
+opens; once freed they follow the player's footpath to the extraction point, staggered where the nav grid has room).
 
 Runtime presence (all models): lower roughness plus a thin clear coat (wet look), a faint blood-red glow (the albedo
 reused as emissive), glowing eyes (`eyes` material names) and the enemy's tell/flash colour on top. Single-clip

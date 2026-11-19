@@ -1612,19 +1612,7 @@
    "credit_title": "Indian man with blue clothes",
    "credit_order": 19,
    "in_game": true,
-   "notes": "Captive. modified: decimated, normalised, hand-authored Grip/Run animation clips (tools/blender/build_captives.py); models/captives/white.glb is the same model with the kurta recoloured cream (Kneel/Run clips)"
-  },
-  "models/captives/red.glb": {
-   "type": "model",
-   "source": "https://sketchfab.com/3d-models/indian-man-with-red-clothes-3f6bb2c1c9e743febfd970f795192504",
-   "author": "Himanshuvaid",
-   "license": "CC BY 4.0",
-   "license_url": "http://creativecommons.org/licenses/by/4.0/",
-   "credit_required": true,
-   "credit_title": "indian-man-with-red-clothes",
-   "credit_order": 20,
-   "in_game": true,
-   "notes": "Captive (half-converted). modified: decimated, normalised, hand-authored Hunch/Run animation clips (tools/blender/build_captives.py); red glow added at runtime"
+   "notes": "Captive (gripping the door, then waving). modified: decimated, normalised, hand-authored Grip/Wave/Idle/Walk/Run clips (tools/blender/build_captives.py)"
   },
   "models/weapons/arms_ar_h470.glb": {
    "type": "model",
@@ -1637,6 +1625,42 @@
    "credit_order": 21,
    "in_game": true,
    "notes": "First-person arms. modified: posed onto each gun and baked (tools/blender/build_fp_arms.py); models/weapons/arms_rl0n_25.glb is the same model posed on the Trishul"
+  },
+  "models/captives/woman.glb": {
+   "type": "model",
+   "author": "ar.jethin",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "in_game": true,
+   "source": "https://sketchfab.com/3d-models/indian-office-woman-e6c60cafd33c4d54b0b840c4146ed244",
+   "credit_title": "Indian Office Woman",
+   "credit_order": 20,
+   "notes": "Captive (kneeling). modified: decimated, textures reduced, normalised; hand-authored Kneel/Walk/Run clips; its own idle kept"
+  },
+  "models/captives/teen.glb": {
+   "type": "model",
+   "author": "ar.jethin",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "in_game": true,
+   "source": "https://sketchfab.com/3d-models/indian-teenager-b2804b40f671431ca7b5cc53b239175e",
+   "credit_title": "Indian Teenager",
+   "credit_order": 22,
+   "notes": "Captive (cowering). modified as above; hand-authored Cower/Walk/Run clips; its own idle kept"
+  },
+  "models/captives/mutant.glb": {
+   "type": "model",
+   "author": "ar.jethin",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "in_game": true,
+   "source": "https://sketchfab.com/3d-models/indian-man-aa1cb70d9c4f4573a3ff7ae0a5bf82dd",
+   "credit_title": "Indian Man",
+   "credit_order": 23,
+   "notes": "Half-converted captive. modified as above; hand-authored Hunch clip with bone-scale deformation, Idle/Walk/Run; grey-green skin, vein glow, red eyes and growths added at runtime"
   }
  }
 }

@@ -1,12 +1,15 @@
-"""Captives in the Charminar cage: three Hyderabadi civilians (kurta-pyjama) with hand-authored animation clips.
+"""Captives in the Charminar cage: four different Hyderabadis with hand-authored animation clips.
 
-Sources (CC BY 4.0, credited in data/assets.json): art/library/sketchfab/captive_blue, captive_red (Himanshuvaid).
-Both are Mixamo-rigged with no usable animation, so this script authors the clips itself. Poses are written as limb
+Sources (CC BY 4.0, credited in data/assets.json): art/library/sketchfab/captive_blue (Himanshuvaid: kurta-pyjama),
+captive_woman / captive_teen / captive_hoodie (ar.jethin: office woman, teenager, bearded man in a hoodie, who becomes
+the half-converted captive). All Mixamo-style rigs; the avatars bring a motion-capture idle, the rest this script
+authors itself. Poses are written as limb
 DIRECTIONS in the character's own frame (forward / up / left), and each bone is aimed with a minimal rotation, which
 works whatever bone roll the glTF importer chose. Clips (looping, in place):
   Grip   - standing at the bars, gripping and shaking them        (blue)
-  Kneel  - kneeling, hands together, pleading and rocking         (white: the blue model with the kurta recoloured)
-  Hunch  - half-converted: hunched, arms hanging, twitching       (red)
+  Kneel  - kneeling, hands together, pleading and rocking         (woman)
+  Cower  - crouched, arms over the head, rocking and flinching     (teen)
+  Hunch  - half-converted: hunched, twitching, deformed (bone scales: a swollen, elongated right arm) (mutant)
   Wave   - the door is open: waving the player in                   (blue)
   Idle / Walk / Run - following the player to the extraction point   (all)
 
@@ -19,7 +22,6 @@ import math
 import os
 
 import bpy
-import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 ROOT = os.getcwd()
@@ -28,11 +30,19 @@ os.makedirs(RAW, exist_ok=True)
 FPS = 24
 
 VARIANTS = {
-    # name: (source folder, captive clip(s), recolour). Every variant also gets Idle / Walk / Run for following the
-    # player to the extraction point once freed.
-    "blue": ("captive_blue", ["Grip", "Wave"], None),
-    "white": ("captive_blue", ["Kneel"], "cream"),
-    "red": ("captive_red", ["Hunch"], None),
+    # name: (source folder, captive clip(s), options). Every variant also gets Walk / Run (and Idle: the source's own
+    # motion-capture idle where it has one, else authored) for following the player to the extraction point.
+    "blue": ("captive_blue", ["Grip", "Wave"], {"height": 1.70}),
+    "woman": ("captive_woman", ["Kneel"], {"height": 1.62, "mocap_idle": True}),
+    "teen": ("captive_teen", ["Cower"], {"height": 1.68, "mocap_idle": True}),
+    # the half-converted man: his Hunch clip also deforms him (bone scales); his own clips return him to normal
+    "mutant": ("captive_hoodie", ["Hunch"], {"height": 1.78, "mutant": True}),
+}
+# Mutation in the Hunch clip: an oversized, elongated right arm and hand, a swollen shoulder and back (local bone
+# scale; y runs along the bone). Child bones inherit, so these compound: forearm ≈1.5x, hand ≈1.7x life size.
+MUTATION = {
+    "RightShoulder": (1.25, 1.1, 1.25), "RightArm": (1.1, 1.12, 1.1), "RightForeArm": (1.05, 1.22, 1.05),
+    "RightHand": (1.1, 1.12, 1.1), "Spine2": (1.15, 1.0, 1.22), "LeftShoulder": (1.12, 1.0, 1.12), "Neck": (1.18, 0.88, 1.18),
 }
 
 
@@ -75,6 +85,7 @@ class Rig:
             self.F = -self.F
         self.height = (w("HeadTop_End") - (w("LeftToeBase") + w("RightToeBase")) / 2).z
         self.leg = (w("LeftUpLeg") - w("LeftLeg")).length + (w("LeftLeg") - w("LeftFoot")).length
+        self.mutant = False
 
     def vec(self, f=0.0, u=0.0, l=0.0):
         return (self.F * f + self.U * u + self.L * l).normalized()
@@ -85,6 +96,7 @@ class Rig:
             loc, rot = BASE[pb.name]
             pb.rotation_quaternion = rot.copy()
             pb.location = loc.copy()
+            pb.scale = Vector((1, 1, 1))
         bpy.context.view_layer.update()
 
     def aim(self, key, d):
@@ -110,6 +122,11 @@ class Rig:
     def pose(self, p):
         """p: {'hips': (drop, fwd), bone: (f, u, l)}; right-side bones may be given as 'R:Arm' to mirror 'L:Arm'."""
         self.reset()
+        for key, sc in p.get("scale", {}).items():
+            pb = find(self.arm, key)
+            if pb:
+                pb.scale = Vector(sc)
+        bpy.context.view_layer.update()
         if "hips" in p:
             self.drop_hips(*p["hips"])
         order = ["Spine", "Spine1", "Spine2", "Neck", "Head",
@@ -123,6 +140,7 @@ class Rig:
     def key(self, frame):
         for pb in self.arm.pose.bones:
             pb.keyframe_insert("rotation_quaternion", frame=frame)
+            pb.keyframe_insert("scale", frame=frame)  # keyed everywhere, so other clips undo the mutation
             if pb.name.split(":")[-1].startswith("Hips"):
                 pb.keyframe_insert("location", frame=frame)
 
@@ -179,12 +197,14 @@ def clip_kneel(r):
 
 
 def clip_hunch(r):
-    """Half-converted: hunched over, arms hanging, knees bent; spasms jerk the head and an arm."""
+    """Half-converted: hunched over, arms hanging, knees bent; spasms jerk the head and an arm. On the mutant the
+    MUTATION scales are part of every key."""
     keys = []
     poses = [(0, 0, 0), (0.25, 0.0, 0.0), (-0.3, 0.35, 0.0), (0.05, 0.0, 0.0), (0.0, 0.0, 0.5), (0.3, -0.2, 0.0), (0, 0, 0)]
     frames = [0, 10, 12, 26, 28, 40, 54]
     for fr, (jerk, armj, legj) in zip(frames, poses):
         keys.append((fr, {
+            "scale": MUTATION if r.mutant else {},
             "hips": (r.leg * 0.06, 0.0),
             "Spine": (0.55, 1, 0), "Spine1": (0.6, 1, jerk * 0.3), "Spine2": (0.5, 1, 0), "Neck": (0.9, 0.5, jerk), "Head": (0.9, 0.2 - abs(jerk) * 0.5, jerk * 1.2),
             "LeftArm": (0.35, -1, 0.22 + armj), "LeftForeArm": (0.45, -1, 0.05),
@@ -214,6 +234,21 @@ def clip_run(r):
         "LeftArm": (-0.05, -1, 0.18), "LeftForeArm": (0.7, 0.6, 0.1),
     }
     return [(0, contact), (4, passing), (8, mirror(contact)), (12, mirror(passing)), (16, contact)]
+
+
+def clip_cower(r):
+    """Crouched against the cage, arms over the head, rocking and flinching."""
+    keys = []
+    for i, (rock, flinch) in enumerate([(0.0, 0.0), (0.12, 0.0), (0.0, 0.25), (0.12, 0.0), (0.0, 0.0)]):
+        keys.append((i * 14, {
+            "hips": (r.leg * 0.48, -r.leg * 0.12),
+            "Spine": (0.75 + rock, 1, 0), "Spine1": (0.7 + rock, 1, 0), "Spine2": (0.5, 1, 0), "Neck": (0.9, 0.6, flinch * 0.3), "Head": (1.0, 0.3, flinch * 0.4),
+            "LeftUpLeg": (1, 0.15, 0.18), "LeftLeg": (-0.35, -1, 0.05), "LeftFoot": (1, -0.3, 0),
+            "RightUpLeg": (1, 0.15, -0.18), "RightLeg": (-0.35, -1, -0.05), "RightFoot": (1, -0.3, 0),
+            "LeftArm": (0.6, 0.55 + flinch, 0.35), "LeftForeArm": (0.1, 0.5, -1), "LeftHand": (-0.3, 0.3, -1),
+            "RightArm": (0.6, 0.55 + flinch, -0.35), "RightForeArm": (0.1, 0.5, 1), "RightHand": (-0.3, 0.3, 1),
+        }))
+    return keys
 
 
 def clip_idle(r):
@@ -262,59 +297,56 @@ def clip_wave(r):
 
 
 CLIPS = {"Grip": clip_grip, "Kneel": clip_kneel, "Hunch": clip_hunch, "Run": clip_run, "Idle": clip_idle,
-         "Walk": clip_walk, "Wave": clip_wave}
+         "Walk": clip_walk, "Wave": clip_wave, "Cower": clip_cower}
 
 
-def recolour_cream(img):
-    """Blue kurta -> cream: only strongly blue pixels change (skin, pyjama and sandals keep their colours)."""
-    px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, 4)
-    rgb = px[:, :3]
-    mx, mn = rgb.max(1), rgb.min(1)
-    sat = np.where(mx > 1e-4, (mx - mn) / np.maximum(mx, 1e-4), 0)
-    blue = (rgb[:, 2] >= mx - 1e-6) & (sat > 0.25) & (rgb[:, 2] > rgb[:, 0] * 1.25)
-    lum = (0.3 * rgb[:, 0] + 0.59 * rgb[:, 1] + 0.11 * rgb[:, 2])
-    ref = float(np.percentile(lum[blue], 90)) if blue.any() else 1.0
-    shade = 0.62 + 0.38 * np.clip(lum / max(1e-3, ref), 0.0, 1.0)  # keep the folds, lose the blue print's darkness
-    cream = np.stack([0.96 * shade, 0.92 * shade, 0.82 * shade], 1)
-    rgb[blue] = cream[blue]
-    px[:, :3] = rgb
-    img.pixels[:] = px.ravel()
-    img.update()
-
-
-for name, (src, idle, recolour) in VARIANTS.items():
+for name, (src, idle, opt) in VARIANTS.items():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.render.fps = FPS
     path = sorted(glob.glob(os.path.join(ROOT, f"art/library/sketchfab/{src}/*.glb")))[0]
     bpy.ops.import_scene.gltf(filepath=path)
-    for a in list(bpy.data.actions):
-        bpy.data.actions.remove(a)  # empty "mixamo.com" placeholder
     arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
     if arm.animation_data:
         for tr in list(arm.animation_data.nla_tracks):
             arm.animation_data.nla_tracks.remove(tr)
+        arm.animation_data.action = None
+    # Keep the source's motion-capture idle (renamed "Idle"); drop placeholders
+    mocap = None
+    for a in list(bpy.data.actions):
+        if opt.get("mocap_idle") and mocap is None and a.frame_range[1] - a.frame_range[0] > 30:
+            mocap = a
+            a.name = "Idle"
+            a.use_fake_user = True
+        else:
+            bpy.data.actions.remove(a)
+    # Teeth are never seen (mouths stay closed); they're 7k triangles per person
+    for o in [o for o in bpy.data.objects if o.type == "MESH" and any("Teeth" in (sl.material.name if sl.material else "") for sl in o.material_slots)]:
+        bpy.data.objects.remove(o, do_unlink=True)
     # The sources carry a stray unskinned Icosphere (2 m across): keep only meshes deformed by the rig
     for o in [o for o in bpy.data.objects if o.type == "MESH" and not any(md.type == "ARMATURE" for md in o.modifiers)]:
         bpy.data.objects.remove(o, do_unlink=True)
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
 
-    # Lighter mesh (keeps skin weights): ~12k triangles
+    # Lighter mesh (keeps skin weights): ~12k triangles for a single-mesh person, ~6k per part (hair 10k) for the
+    # multi-part avatars
+    multi = len(meshes) > 2
     for m in meshes:
         tris = sum(len(p.vertices) - 2 for p in m.data.polygons)
-        if tris > 14000:
+        mat = m.material_slots[0].material.name if m.material_slots and m.material_slots[0].material else ""
+        cap = (10000 if "hair" in mat.lower() else 6000) if multi else 12000
+        if tris > cap * 1.15:
             mod = m.modifiers.new("dec", "DECIMATE")
-            mod.ratio = 12000 / tris
+            mod.ratio = cap / tris
             while m.modifiers[0] != mod:
                 bpy.context.view_layer.objects.active = m
                 bpy.ops.object.modifier_move_up(modifier="dec")
             bpy.context.view_layer.objects.active = m
             bpy.ops.object.modifier_apply(modifier="dec")
+    tex = 512 if multi else 1024  # the avatars carry ~16 maps each
     for img in bpy.data.images:
-        if max(img.size) > 1024:
-            k = 1024 / max(img.size)
+        if max(img.size) > tex:
+            k = tex / max(img.size)
             img.scale(int(img.size[0] * k), int(img.size[1] * k))
-        if recolour == "cream":
-            recolour_cream(img)
             img.pack()
 
     # Normalise: 1.70 m tall, feet on z=0, centred (measured on the deformed vertices; object bounds lie here).
@@ -331,16 +363,21 @@ for name, (src, idle, recolour) in VARIANTS.items():
         ev.to_mesh_clear()
     zmin, zmax = min(v.z for v in vs), max(v.z for v in vs)
     cx, cy = sum(v.x for v in vs) / len(vs), sum(v.y for v in vs) / len(vs)
-    k = 1.70 / (zmax - zmin)
+    k = opt["height"] / (zmax - zmin)
     for o in [o for o in bpy.data.objects if o.parent is None]:
         o.scale = o.scale * k
         o.location = (o.location - Vector((cx, cy, zmin))) * k
     bpy.context.view_layer.update()
 
     rig = Rig(arm)
+    rig.mutant = bool(opt.get("mutant"))
     arm.animation_data_create()
     arm.animation_data.use_nla = False  # author each clip alone (stashed clips would otherwise leak into its keys)
-    for clip in [*idle, "Idle", "Walk", "Run"]:
+    if mocap:
+        tr = arm.animation_data.nla_tracks.new()
+        tr.name = "Idle"
+        tr.strips.new("Idle", 0, mocap)
+    for clip in [*idle, *([] if mocap else ["Idle"]), "Walk", "Run"]:
         act = bpy.data.actions.new(clip)
         act.use_fake_user = True
         arm.animation_data.action = act
