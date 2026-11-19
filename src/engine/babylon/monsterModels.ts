@@ -4,6 +4,7 @@ import {
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import "../../game/Props"; // configures the locally hosted meshopt decoder before any model loads
+import { keepClearOfWalls, measureFootprint } from "./clearance";
 import { setTarget, type DamageFn } from "./convert";
 
 /**
@@ -53,8 +54,11 @@ export function attachMonsterModel(view: SkinnableEnemy, spec: MonsterModelSpec,
   load(scene, spec.file).then((c) => {
     if (e.root.isDisposed() || !e.alive) return;
     const inst = c.instantiateModelsToScene((n) => n, true, { doNotInstantiate: true });
+    // root (physics body) -> clear (visual wall clearance, see clearance.ts) -> holder (fitted model)
+    const clear = new TransformNode("monster-clearance", scene);
+    clear.parent = e.root;
     const holder = new TransformNode("monster-model", scene);
-    holder.parent = e.root;
+    holder.parent = clear;
     for (const r of inst.rootNodes) r.parent = holder;
     const meshes = holder.getChildMeshes(false) as AbstractMesh[];
 
@@ -86,13 +90,14 @@ export function attachMonsterModel(view: SkinnableEnemy, spec: MonsterModelSpec,
       if (own.has(m)) continue;
       if (spec.keep?.some((k) => m.name === k)) {
         // Re-seat kept parts on the model's back (e.g. the Spitter's sac, its weak spot + firing tell)
-        m.setParent(e.root);
+        m.setParent(clear);
         m.position.set(0, topY + 0.05, spec.length * 0.12);
         onMuzzle?.(m.position);
         continue;
       }
       m.isVisible = false;
     }
+    const stopClearance = keepClearOfWalls(scene, e.root, clear, measureFootprint(e.root, meshes), () => e.alive);
     const mats = new Set<PBRMaterial | StandardMaterial>();
     for (const m of meshes) {
       m.isPickable = true;
@@ -111,6 +116,7 @@ export function attachMonsterModel(view: SkinnableEnemy, spec: MonsterModelSpec,
     const obs = scene.onBeforeRenderObservable.add(() => {
       if (e.root.isDisposed()) {
         scene.onBeforeRenderObservable.remove(obs);
+        stopClearance();
         for (const g of inst.animationGroups) g.dispose();
         return;
       }

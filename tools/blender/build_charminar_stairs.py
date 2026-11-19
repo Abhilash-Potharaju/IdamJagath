@@ -27,9 +27,10 @@ BLEND = os.path.join(ROOT, "tools/blender/src/charminar_stairs.blend")
 
 CX, CY = -6.97, 6.97     # shaft centre
 ROOF = 20.58             # roof terrace height
-PITCH = 2.75             # rise per full turn (headroom 2.55 m under the turn above)
-R_IN, R_OUT = 0.3, 1.75  # walkable band
-COL_R = 0.25             # central column radius
+PITCH = 3.2              # rise per full turn: 6.4 turns to the roof (was 2.75 / 7.5); headroom 3.0 m under the turn above
+R_IN, R_OUT = 0.18, 1.86 # walkable band: out to the shaft wall (was 0.3-1.75). The shaft can't grow: above ~10 m the
+                         # leg's outer skin is only ~2.0-2.1 m from the shaft centre, a wider cut would hole the monument
+COL_R = 0.14             # central newel radius (was 0.25)
 SHAFT_R = 1.9
 STEP_RISE = 0.18
 THICK = 0.2
@@ -144,8 +145,8 @@ def ring(name, r0, r1, z0, z1, gap_from, gap_to, segs=36):
 
 
 door_gap = math.radians(32)
-obj_from_bm("COL_ShaftRing", ring("COL_ShaftRing", SHAFT_R - 0.05, SHAFT_R + 0.35, 0, 2.6, START - door_gap, START + door_gap))
-bm_upper = ring("COL_ShaftRingUpper", SHAFT_R - 0.05, SHAFT_R + 0.35, 2.6, ROOF, 0, 0)
+obj_from_bm("COL_ShaftRing", ring("COL_ShaftRing", SHAFT_R - 0.03, SHAFT_R + 0.35, 0, 2.6, START - door_gap, START + door_gap))
+bm_upper = ring("COL_ShaftRingUpper", SHAFT_R - 0.03, SHAFT_R + 0.35, 2.6, ROOF, 0, 0)
 obj_from_bm("COL_ShaftRingUpper", bm_upper)
 
 # ── Railing round the roof hatch, leaving an exit where the stair arrives ──

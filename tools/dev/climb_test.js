@@ -1,6 +1,6 @@
 // Charminar climb test: walk in through the SW-leg door, follow the spiral stair (steering along its tangent),
 // reach the roof terrace, walk to the roof pylon, then walk back down. Returns the trace summary.
-window.climbTest = () => {
+window.climbTest = (R = 1.05) => { // R = walking radius from the newel (try 0.6 inner / 1.4 outer)
   const g = window.__game, P = g.player, K = g.input.keys;
   const CX = 6.97, CZ = 79.03, ROOF = 20.58; // SE leg; Blender x = -game x
   const yawTo = (dx, dz) => Math.atan2(dx, dz);
@@ -12,9 +12,9 @@ window.climbTest = () => {
   for (; t < 30 && P.body.position.y < ROOF + 0.3; t += 1 / 60) {
     const bx = -(P.body.position.x - CX), by = (86 - P.body.position.z) - (86 - CZ); // Blender-space offsets
     const a = Math.atan2(by, bx), r = Math.hypot(bx, by);
-    // tangent (counter-clockwise in Blender top view) + pull toward the walking radius 1.05
+    // tangent (counter-clockwise in Blender top view) + pull toward the walking radius R
     let tx = -Math.sin(a), ty = Math.cos(a);
-    const pull = (1.05 - r) * 0.8; tx += Math.cos(a) * pull; ty += Math.sin(a) * pull;
+    const pull = (R - r) * 0.8; tx += Math.cos(a) * pull; ty += Math.sin(a) * pull;
     P.yaw = yawTo(-tx, -ty); // Blender +x = game -x, Blender +y = game -z
     g.simulate(1 / 60); maxY = Math.max(maxY, P.body.position.y);
   }
@@ -35,7 +35,7 @@ window.climbTest = () => {
 window.descendTest = () => {
   const g = window.__game, P = g.player, K = g.input.keys;
   const CX = 6.97, CZ = 79.03, yawTo = (dx, dz) => Math.atan2(dx, dz), out = {};
-  const endA = (90 + 7.483 * 360) * Math.PI / 180;               // ramp top angle (Blender space)
+  const endA = (90 + 20.58 / 3.2 * 360) * Math.PI / 180;              // ramp top angle (Blender space)
   const bpt = (r, a) => [CX - r * Math.cos(a), CZ - r * Math.sin(a)]; // Blender (x, y) offset -> game (x, z)
   K.add("KeyW");
   const goto = (x, z, maxS) => { for (let t = 0; t < maxS; t += 1 / 60) { const dx = x - P.body.position.x, dz = z - P.body.position.z; if (Math.hypot(dx, dz) < 0.35) return true; P.yaw = yawTo(dx, dz); g.simulate(1 / 60); } return false; };

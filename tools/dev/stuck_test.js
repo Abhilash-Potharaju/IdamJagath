@@ -31,7 +31,7 @@ window.stuckTest = (trials = 300, seed = 7) => {
 window.stuckTestClimb = (trials = 50, seed = 3) => {
   const g = window.__game, P = g.player, K = g.input.keys;
   let s = seed >>> 0; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
-  const CX = 6.97, CZ = 79.03, START = Math.PI / 2, TOTAL = 7.483 * 2 * Math.PI, PITCH = 2.75;
+  const CX = 6.97, CZ = 79.03, START = Math.PI / 2, TOTAL = (20.58 / 3.2) * 2 * Math.PI, PITCH = 3.2;
   const walk = (deg, sec) => { P.yaw = deg * Math.PI / 180; K.add("KeyW"); g.simulate(sec); K.delete("KeyW"); };
   const escape = () => { const e = P.body.position.clone(); let best = 0;
     for (const d of [0, 45, 90, 135, 180, 225, 270, 315]) { P.body.position.copyFrom(e); walk(d, 0.4); best = Math.max(best, Math.hypot(P.body.position.x - e.x, P.body.position.z - e.z) + Math.abs(P.body.position.y - e.y)); }
