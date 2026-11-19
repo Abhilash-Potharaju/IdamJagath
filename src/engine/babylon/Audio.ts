@@ -13,7 +13,20 @@ export type SoundName =
   // world / mission
   | "pylon_hit" | "pylon_explode" | "alarm" | "cage_open" | "captives_freed" | "win" | "lose"
   // game feel
-  | "footstep" | "footstep_run" | "land" | "heartbeat" | "shell_drop" | "impact_stone" | "impact_flesh" | "kill_confirm";
+  | "footstep" | "footstep_run" | "land" | "heartbeat" | "shell_drop" | "impact_stone" | "impact_flesh" | "kill_confirm"
+  // reload phases (WeaponView), creature presence (CreatureAudio)
+  | "vajra_mag_out" | "vajra_mag_in" | "vajra_bolt" | "trishul_shell" | "trishul_pump"
+  | "crawler_idle" | "spitter_idle" | "spitter_death" | "warden_idle" | "warden_step";
+
+/**
+ * File-only layers (no synth recipe): a gunshot is crack + body + space-dependent tail (+ distant echo in the open).
+ * When a weapon's crack layer isn't loaded, its single synth/file sound plays instead.
+ */
+type LayerName = "vajra_crack" | "vajra_body" | "trishul_crack" | "trishul_body" | "gun_tail_lane" | "gun_tail_plaza" | "gun_echo";
+const GUN_LAYERS: Partial<Record<SoundName, { crack: LayerName; body: LayerName; gain: number; tail: number; tailRate: number; echo: number }>> = {
+  vajra_fire: { crack: "vajra_crack", body: "vajra_body", gain: 0.62, tail: 0.5, tailRate: 1, echo: 0.3 },
+  trishul_fire: { crack: "trishul_crack", body: "trishul_body", gain: 0.85, tail: 0.75, tailRate: 0.86, echo: 0.45 },
+};
 
 const MAX_VOICES = 4; // per sound name
 const MAX_DIST = 60;
@@ -32,12 +45,19 @@ export const SOUND_NAMES = [
   "warden_land", "warden_roar", "warden_charge", "warden_impact", "warden_stun", "warden_death",
   "enemy_hurt", "enemy_death", "pylon_hit", "pylon_explode", "alarm", "cage_open", "captives_freed", "win", "lose",
   "footstep", "footstep_run", "land", "heartbeat", "shell_drop", "impact_stone", "impact_flesh", "kill_confirm",
+  "vajra_mag_out", "vajra_mag_in", "vajra_bolt", "trishul_shell", "trishul_pump",
+  "crawler_idle", "spitter_idle", "spitter_death", "warden_idle", "warden_step",
 ] as const satisfies readonly SoundName[];
+const LAYER_NAMES: readonly string[] = ["vajra_crack", "vajra_body", "trishul_crack", "trishul_body", "gun_tail_lane", "gun_tail_plaza", "gun_echo"] satisfies readonly LayerName[];
 
-/** Audio files (rendered from the recipes by tools/dev/export_audio.mjs). ?synthaudio forces live synthesis. */
+/**
+ * Audio files: in-house renders of the recipes (tools/dev/export_audio.mjs) and Freesound-built sounds
+ * (tools/audio/build.mjs → public/audio/fs/). ?synthaudio forces live synthesis.
+ */
 const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/`;
 const USE_FILES = !new URLSearchParams(location.search).has("synthaudio");
-interface AudioManifest { sounds: { name: string; file: string; duration: number }[]; ambience?: { file: string; duration: number } }
+/** Manifest entry: `files` = random variants (older manifests have just `file`); `sources` = Freesound provenance. */
+interface AudioManifest { sounds: { name: string; file: string; files?: string[]; duration: number; sources?: unknown[] }[]; ambience?: { file: string; duration: number } }
 
 function makeNoise(ctx: BaseAudioContext): AudioBuffer {
   const len = ctx.sampleRate * 2;
@@ -176,6 +196,14 @@ class Synth {
   }
 }
 
+/** Short mechanical clicks (synth fallback for the reload phases). */
+function clicks(s: Synth, t: number, at: readonly (readonly [number, number])[]): void {
+  for (const [dt, f] of at) {
+    s.noise(t + dt, 0.04, 0.35, "bandpass", f, f * 0.8, { q: 6 });
+    s.tone("square", f / 4, f / 6, t + dt, 0.03, 0.06);
+  }
+}
+
 // ───────────────────────── sound recipes ─────────────────────────
 const R: Record<SoundName, Recipe> = {
   footstep: (s, t) => {
@@ -233,12 +261,16 @@ const R: Record<SoundName, Recipe> = {
     s.tone("square", 90, 40, t, 0.18, 0.25, { dest: d });
     return 0.5;
   },
-  reload: (s, t) => {
-    for (const [dt, f] of [[0, 2200], [0.18, 1600], [0.55, 2600], [0.7, 1900]] as const) {
-      s.noise(t + dt, 0.04, 0.35, "bandpass", f, f * 0.8, { q: 6 });
-      s.tone("square", f / 4, f / 6, t + dt, 0.03, 0.06);
-    }
-    return 0.8;
+  // The core's reload cue is silent: WeaponView plays per-weapon phases (mag out / in, bolt…) in time with the motion.
+  reload: () => 0,
+  vajra_mag_out: (s, t) => { clicks(s, t, [[0, 2200], [0.07, 1600]]); return 0.15; },
+  vajra_mag_in: (s, t) => { clicks(s, t, [[0, 2600]]); s.noise(t, 0.06, 0.25, "lowpass", 900, 200); return 0.1; },
+  vajra_bolt: (s, t) => { clicks(s, t, [[0, 1900], [0.11, 2500]]); return 0.18; },
+  trishul_shell: (s, t) => { clicks(s, t, [[0, 1700]]); return 0.08; },
+  trishul_pump: (s, t) => {
+    s.noise(t, 0.12, 0.2, "bandpass", 1200, 2600, { q: 2 });
+    clicks(s, t, [[0.02, 1500], [0.16, 2100]]);
+    return 0.25;
   },
   switch: (s, t) => {
     s.noise(t, 0.05, 0.3, "bandpass", 3200, 2000, { q: 5 });
@@ -332,6 +364,31 @@ const R: Record<SoundName, Recipe> = {
     s.noise(t + 1.6, 1.0, 0.8, "lowpass", 1200, 60);
     return 2.7;
   },
+  crawler_idle: (s, t) => {
+    s.trem("sawtooth", 700, 520, 31, t, 0.35, 0.1);
+    s.noise(t, 0.3, 0.06, "bandpass", 3500, 2500, { q: 5, attack: 0.05 });
+    return 0.4;
+  },
+  spitter_idle: (s, t) => {
+    s.trem("sine", 180, 120, 17, t, 0.5, 0.2);
+    s.noise(t, 0.5, 0.08, "bandpass", 500, 300, { q: 5, attack: 0.1 });
+    return 0.55;
+  },
+  spitter_death: (s, t) => {
+    s.trem("sine", 260, 70, 14, t, 0.8, 0.25);
+    s.noise(t, 0.7, 0.15, "lowpass", 900, 150);
+    return 0.85;
+  },
+  warden_idle: (s, t) => {
+    const d = s.dirt(2);
+    for (const det of [-12, 9]) s.tone("sawtooth", 62, 50, t, 0.9, 0.12, { attack: 0.15, dest: d, detune: det });
+    return 0.95;
+  },
+  warden_step: (s, t) => {
+    s.tone("sine", 70, 35, t, 0.2, 0.7);
+    s.noise(t, 0.14, 0.35, "lowpass", 450, 80);
+    return 0.25;
+  },
   enemy_hurt: (s, t) => {
     s.noise(t, 0.08, 0.3, "bandpass", 900, 400, { q: 3 });
     s.tone("sine", 400, 220, t, 0.07, 0.12);
@@ -391,21 +448,52 @@ const R: Record<SoundName, Recipe> = {
   },
 };
 
-/** Base loudness per sound (before distance falloff). */
+/** Base loudness per sound (before distance falloff), as tuned for the synth recipes / in-house files. */
 const VOLUME: Partial<Record<SoundName, number>> = {
   vajra_fire: 0.55, hit: 0.6, pylon_hit: 0.5, enemy_hurt: 0.6, alarm: 0.7, warden_roar: 1.0, warden_death: 1.0,
   footstep: 0.32, footstep_run: 0.42, land: 0.6, heartbeat: 0.9, shell_drop: 0.25, impact_stone: 0.4, impact_flesh: 0.5, kill_confirm: 0.55,
 };
 
+/** Loudness of the Freesound-built files (tools/audio/build.mjs normalises them, so they need their own mix). */
+const FILE_VOLUME: Partial<Record<SoundName, number>> = {
+  hit: 0.3, switch: 0.55, shell_drop: 0.32, impact_stone: 0.8, impact_flesh: 0.75, kill_confirm: 0.8, player_hurt: 0.85,
+  vajra_mag_out: 0.6, vajra_mag_in: 0.7, vajra_bolt: 0.7, trishul_shell: 0.6, trishul_pump: 0.8,
+  crawler_idle: 0.75, crawler_windup: 0.9, crawler_lunge: 0.95, crawler_bite: 0.9, enemy_hurt: 0.75, enemy_death: 1.0,
+  spitter_idle: 0.8, spitter_charge: 0.9, spitter_spit: 0.9, glob_splash: 0.8, spitter_death: 0.85,
+  warden_idle: 1.0, warden_step: 1.0, warden_roar: 1.1, warden_charge: 1.1, warden_land: 1.1, warden_impact: 1.1, warden_stun: 1.0, warden_death: 1.1,
+};
+
+/** Per-name voice limits that differ from MAX_VOICES (fast-firing layers, pellet impacts, tails that get cut). */
+const VOICES: Partial<Record<string, number>> = {
+  vajra_crack: 6, vajra_body: 6, impact_stone: 6, impact_flesh: 5, gun_tail_lane: 8, gun_tail_plaza: 8, gun_echo: 8, warden_step: 3,
+};
+
+type Vec = { x: number; y: number; z: number };
+/** Distance to the first surface along `dir` from `from`, or null if nothing within `range` (engine raycast). */
+export type SpaceProbe = (from: Vec, dir: Vec, range: number) => number | null;
+/** True when solid geometry blocks the straight line between the two points. */
+export type OcclusionTest = (from: Vec, to: Vec) => boolean;
+
+const PROBE_RANGE = 40;
+const PROBE_INTERVAL = 0.25; // s
+
+function pick<T>(a: readonly T[]): T {
+  return a[Math.floor(Math.random() * a.length)];
+}
+
 // (Camera shake that some sounds carry is gameplay-relevant (it moves the aim) and lives in the core: world.ts SOUND_SHAKE.)
 
 /**
- * Game audio. Plays the pre-rendered files in public/audio/ (see public/audio/manifest.json), through the same
- * per-sound gain, distance falloff, stereo panning, voice limits, pitch variation and reverb as before.
- * The original Web Audio synth recipes remain the fallback (and the source the files were rendered from).
+ * Game audio. Plays the files in public/audio/ (see public/audio/manifest.json: in-house renders + Freesound-built
+ * sounds with random variants), with per-sound gain, distance falloff, air absorption, occlusion muffling, HRTF 3D
+ * panning, voice limits, pitch variation and a shared reverb. Gunshots are layered (crack + body + a tail chosen by
+ * how open the space around the player is, + a distant echo in the open). The Web Audio synth recipes remain the
+ * fallback for anything not loaded (and the source the in-house files were rendered from).
  */
 export class Audio {
-  private buffers = new Map<SoundName, AudioBuffer>();
+  private buffers = new Map<string, AudioBuffer[]>();
+  /** Names whose loaded files are Freesound-built (use FILE_VOLUME). */
+  private sourced = new Set<string>();
   private ambienceBuffer: AudioBuffer | null = null;
   private ctx: AudioContext | null = null;
   private master!: GainNode;
@@ -413,8 +501,18 @@ export class Audio {
   private reverbIn!: GainNode;
   private noiseBuf!: AudioBuffer;
   private distCurve!: Float32Array<ArrayBuffer>;
-  private voices = new Map<SoundName, number>();
+  private voices = new Map<string, number>();
   private listener = { x: 0, y: 0, z: 0, yaw: 0 };
+  /** Current gun tails per weapon sound (cut when the next shot starts its own). */
+  private tails = new Map<string, { src: AudioBufferSourceNode; input: GainNode }[]>();
+  /** 0 = tight lane / enclosed, 1 = open plaza (smoothed; from `spaceProbe`). */
+  openness = 0.5;
+  /** Set by the composition root: engine raycast for measuring the space around the listener. */
+  spaceProbe: SpaceProbe | null = null;
+  /** Set by the composition root: line-of-sight test for muffling sounds behind walls. */
+  occlusion: OcclusionTest | null = null;
+  private probeAt = -1;
+  private probeIdx = 0;
   muted = false;
   // Volume buses (Settings): master × (sfx | music). Base levels below are the mix the game was tuned with.
   private vol = { master: 1, sfx: 1, music: 1 };
@@ -433,62 +531,161 @@ export class Audio {
   }
 
   /** Play a sound; `at` = world position for distance falloff/panning (omit for UI/player sounds). */
-  play(name: SoundName, at?: { x: number; y: number; z: number }): void {
+  play(name: SoundName, at?: Vec): void {
     const ctx = this.ctx;
     if (!ctx || this.muted || ctx.state !== "running") return;
-    const n = this.voices.get(name) ?? 0;
-    if (n >= MAX_VOICES) return;
+    const gun = GUN_LAYERS[name];
+    if (gun && this.buffers.has(gun.crack) && this.buffers.has(gun.body)) { this.playGun(name, gun); return; }
 
-    let gain = (VOLUME[name] ?? 0.8) * (0.9 + Math.random() * 0.2);
-    let pan = 0;
-    if (at) {
-      const dx = at.x - this.listener.x, dy = at.y - this.listener.y, dz = at.z - this.listener.z;
-      const dist = Math.hypot(dx, dy, dz);
-      if (dist >= MAX_DIST) return;
-      gain *= Math.pow(1 - dist / MAX_DIST, 2) / (1 + dist * 0.04);
-      if (dist > 0.5) {
-        const yaw = this.listener.yaw;
-        const right = (dx * Math.cos(yaw) - dz * Math.sin(yaw)) / Math.hypot(dx, dz || 1e-6);
-        pan = Math.max(-0.85, Math.min(0.85, right * 0.85));
-      }
-    }
-    if (gain < 0.01) return;
-
+    const variants = this.buffers.get(name);
+    const base = (variants && this.sourced.has(name) ? FILE_VOLUME[name] : undefined) ?? VOLUME[name] ?? 0.8;
+    const r = this.route(name, base, at);
+    if (!r) return;
     const t = ctx.currentTime + 0.005;
-    const out = ctx.createGain();
-    out.gain.value = gain;
-    const panner = ctx.createStereoPanner();
-    panner.pan.value = pan;
-    out.connect(panner);
-    panner.connect(this.sfx);
-    panner.connect(this.reverbIn);
-
-    let dur: number;
-    const buf = this.buffers.get(name);
-    if (buf) {
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.playbackRate.value = randomPitch();
-      src.connect(out);
-      src.start(t);
-      dur = buf.duration / src.playbackRate.value;
+    if (variants) {
+      this.startBuffer(name, pick(variants), r, randomPitch(), t);
     } else {
-      dur = R[name](new Synth(ctx, out, this.noiseBuf, this.distCurve), t);
+      const dur = R[name](new Synth(ctx, r.input, this.noiseBuf, this.distCurve), t);
+      window.setTimeout(() => this.release(name, r.nodes), (dur + 0.3) * 1000);
+    }
+  }
+
+  /**
+   * One voice's signal chain: input gain → [air-absorption / occlusion low-pass → HRTF panner] → sfx bus + reverb send.
+   * Returns null when the voice limit is reached or it would be inaudible.
+   */
+  private route(name: string, base: number, at?: Vec, wet = 1): { input: GainNode; nodes: AudioNode[] } | null {
+    const ctx = this.ctx!;
+    const n = this.voices.get(name) ?? 0;
+    if (n >= (VOICES[name] ?? MAX_VOICES)) return null;
+    let gain = base * (0.9 + Math.random() * 0.2);
+    const input = ctx.createGain();
+    const nodes: AudioNode[] = [input];
+    let last: AudioNode = input;
+    if (at) {
+      const L = this.listener;
+      const dx = at.x - L.x, dy = at.y - L.y, dz = at.z - L.z;
+      const dist = Math.hypot(dx, dy, dz);
+      if (dist >= MAX_DIST) return null;
+      gain *= Math.pow(1 - dist / MAX_DIST, 2) / (1 + dist * 0.04);
+      if (gain < 0.01) return null;
+      // Air absorption (highs fade with distance) and occlusion (a wall in between muffles and lowers it)
+      let cutoff = 22000 * Math.pow(0.5, dist / 14);
+      if (dist > 2.5 && this.occlusion?.(L, at)) { cutoff = Math.min(cutoff, 650); gain *= 0.55; }
+      if (cutoff < 15000) {
+        const f = ctx.createBiquadFilter();
+        f.type = "lowpass";
+        f.frequency.value = Math.max(300, cutoff);
+        last.connect(f); last = f; nodes.push(f);
+      }
+      // HRTF panning in listener space (the Web Audio listener stays at the origin facing −Z)
+      const p = ctx.createPanner();
+      p.panningModel = "HRTF";
+      p.distanceModel = "linear";
+      p.rolloffFactor = 0; // distance gain is ours (above)
+      const c = Math.cos(L.yaw), s = Math.sin(L.yaw);
+      const right = dx * c - dz * s, fwd = dx * s + dz * c;
+      const k = dist > 0.3 ? 1 / dist : 0;
+      p.positionX.value = right * k;
+      p.positionY.value = dy * k;
+      p.positionZ.value = dist > 0.3 ? -fwd * k : -1;
+      last.connect(p); last = p; nodes.push(p);
+    }
+    if (gain < 0.01) return null;
+    input.gain.value = gain;
+    last.connect(this.sfx);
+    if (wet >= 1) last.connect(this.reverbIn);
+    else if (wet > 0) {
+      const w = ctx.createGain();
+      w.gain.value = wet;
+      last.connect(w); w.connect(this.reverbIn); nodes.push(w);
     }
     this.voices.set(name, n + 1);
-    window.setTimeout(() => {
-      this.voices.set(name, Math.max(0, (this.voices.get(name) ?? 1) - 1));
-      out.disconnect();
-      panner.disconnect();
-    }, (dur + 0.3) * 1000);
+    return { input, nodes };
+  }
+
+  private release(name: string, nodes: AudioNode[]): void {
+    this.voices.set(name, Math.max(0, (this.voices.get(name) ?? 1) - 1));
+    for (const n of nodes) n.disconnect();
+  }
+
+  private startBuffer(name: string, buf: AudioBuffer, r: { input: GainNode; nodes: AudioNode[] }, rate: number, t: number): AudioBufferSourceNode {
+    const src = this.ctx!.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    src.connect(r.input);
+    src.onended = () => { src.disconnect(); this.release(name, r.nodes); };
+    src.start(t);
+    return src;
+  }
+
+  /** Layered gunshot: crack + body (tight, mostly dry) + a space-dependent tail and, in the open, a delayed echo. */
+  private playGun(name: SoundName, L: NonNullable<(typeof GUN_LAYERS)[SoundName]>): void {
+    const ctx = this.ctx!;
+    const t = ctx.currentTime + 0.004;
+    const pitch = 1 + (Math.random() - 0.5) * 0.06;
+    const layer = (layer: string, gain: number, rate: number, wet: number, delay = 0) => {
+      const bufs = this.buffers.get(layer);
+      if (!bufs || gain < 0.01) return null;
+      const r = this.route(layer, gain, undefined, wet);
+      if (!r) return null;
+      return { src: this.startBuffer(layer, pick(bufs), r, rate, t + delay), input: r.input };
+    };
+    layer(L.crack, L.gain, pitch, 0.2);
+    layer(L.body, L.gain * 0.95, pitch * (0.98 + Math.random() * 0.04), 0.2);
+
+    // Sustained fire = one continuous reverb: each shot fades the previous tail out and starts its own
+    for (const v of this.tails.get(name) ?? []) {
+      v.input.gain.setTargetAtTime(0, t, 0.035);
+      try { v.src.stop(t + 0.2); } catch { /* already stopped */ }
+    }
+    const open = this.openness;
+    const lane = Math.cos((open * Math.PI) / 2), plaza = Math.sin((open * Math.PI) / 2); // equal-power crossfade
+    const tails = [
+      layer("gun_tail_lane", L.gain * L.tail * lane, L.tailRate * pitch, 0.08, 0.008),
+      layer("gun_tail_plaza", L.gain * L.tail * plaza, L.tailRate * pitch, 0.08, 0.012),
+      open > 0.4 ? layer("gun_echo", L.gain * L.echo * (open - 0.4) / 0.6, L.tailRate * (0.96 + Math.random() * 0.08), 0, 0.2 + Math.random() * 0.25) : null,
+    ].filter((v): v is NonNullable<typeof v> => v !== null);
+    this.tails.set(name, tails);
   }
 
   /** Called every frame with the listener (camera) position and yaw. */
-  update(listener: { x: number; y: number; z: number }, yaw: number): void {
+  update(listener: Vec, yaw: number): void {
     this.listener.x = listener.x;
     this.listener.y = listener.y;
     this.listener.z = listener.z;
     this.listener.yaw = yaw;
+    const now = performance.now() / 1000;
+    if (this.spaceProbe && now - this.probeAt >= PROBE_INTERVAL) {
+      this.probeAt = now;
+      this.measureSpace(this.spaceProbe);
+    }
+  }
+
+  /**
+   * How open is it around the listener? 8 horizontal rays (alternately offset by 22.5°) + one up. The median free
+   * distance (robust to the two rays that run down a lane) ≈ 5 m in the bazaar lane → 0, ≳ 14 m in the plaza → 1;
+   * a low ceiling (stair shaft, arcade) closes it further.
+   */
+  private measureSpace(probe: SpaceProbe): void {
+    const from = { x: this.listener.x, y: this.listener.y, z: this.listener.z };
+    const off = (this.probeIdx++ % 2) * (Math.PI / 8);
+    const ds: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = off + (i * Math.PI) / 4;
+      ds.push(probe(from, { x: Math.sin(a), y: 0, z: Math.cos(a) }, PROBE_RANGE) ?? PROBE_RANGE);
+    }
+    ds.sort((a, b) => a - b);
+    const median = (ds[3] + ds[4]) / 2;
+    const up = probe(from, { x: 0, y: 1, z: 0 }, 25) ?? 25;
+    let open = Math.max(0, Math.min(1, (median - 5) / 9));
+    if (up < 8) open *= 0.35;
+    this.openness += (open - this.openness) * 0.5;
+  }
+
+  /** Diagnostics for automated checks: loaded file-backed sound names and the current space estimate. */
+  debugInfo(): { loaded: string[]; sourced: number; openness: number; state: string } {
+    return { loaded: [...this.buffers.keys()].sort(), sourced: this.sourced.size, openness: +this.openness.toFixed(3), state: this.state };
   }
 
   /** Must be called from a user gesture (browser autoplay rules). Safe to call repeatedly. */
@@ -551,7 +748,9 @@ export class Audio {
 
   /** Number of decoded sound files (for diagnostics/tests). */
   get loadedFiles(): number {
-    return this.buffers.size + (this.ambienceBuffer ? 1 : 0);
+    let n = this.ambienceBuffer ? 1 : 0;
+    for (const v of this.buffers.values()) n += v.length;
+    return n;
   }
 
   /** Fetch + decode every file in the manifest; anything missing falls back to the synth recipe. */
@@ -571,9 +770,11 @@ export class Audio {
     };
     const amb = manifest.ambience ? decode(manifest.ambience.file) : Promise.resolve(null);
     await Promise.all(manifest.sounds.map(async (s) => {
-      if (!(s.name in R)) return;
-      const b = await decode(s.file);
-      if (b) this.buffers.set(s.name as SoundName, b);
+      if (!(s.name in R) && !LAYER_NAMES.includes(s.name)) return;
+      const bufs = (await Promise.all((s.files ?? [s.file]).map(decode))).filter((b): b is AudioBuffer => b !== null);
+      if (!bufs.length) return;
+      this.buffers.set(s.name, bufs);
+      if (s.sources) this.sourced.add(s.name);
     }));
     this.ambienceBuffer = await amb;
     this.startAmbience();

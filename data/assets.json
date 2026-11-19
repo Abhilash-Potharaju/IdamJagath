@@ -953,6 +953,642 @@
    "license": "generator terms (check OpenAI terms before commercial use)",
    "credit_required": false,
    "in_game": true
+  },
+  "audio/freesound/77027": {
+   "type": "audio",
+   "source": "https://freesound.org/people/andysm/sounds/77027/",
+   "author": "andysm",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_land, warden_step (public/audio/fs/)"
+  },
+  "audio/freesound/77632": {
+   "type": "audio",
+   "source": "https://freesound.org/people/lendrick/sounds/77632/",
+   "author": "lendrick",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_idle (public/audio/fs/)"
+  },
+  "audio/freesound/77635": {
+   "type": "audio",
+   "source": "https://freesound.org/people/lendrick/sounds/77635/",
+   "author": "lendrick",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_idle (public/audio/fs/)"
+  },
+  "audio/freesound/106126": {
+   "type": "audio",
+   "source": "https://freesound.org/people/j1987/sounds/106126/",
+   "author": "j1987",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_idle, crawler_windup (public/audio/fs/)"
+  },
+  "audio/freesound/107793": {
+   "type": "audio",
+   "source": "https://freesound.org/people/j1987/sounds/107793/",
+   "author": "j1987",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_bolt (public/audio/fs/)"
+  },
+  "audio/freesound/108793": {
+   "type": "audio",
+   "source": "https://freesound.org/people/CeebFrack/sounds/108793/",
+   "author": "CeebFrack",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: trishul_shell (public/audio/fs/)"
+  },
+  "audio/freesound/147017": {
+   "type": "audio",
+   "source": "https://freesound.org/people/JustInvoke/sounds/147017/",
+   "author": "JustInvoke",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: spitter_spit, glob_splash (public/audio/fs/)"
+  },
+  "audio/freesound/179005": {
+   "type": "audio",
+   "source": "https://freesound.org/people/CodyGudmundsen/sounds/179005/",
+   "author": "CodyGudmundsen",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Bullet Casing On Concrete 2",
+   "credit_order": 16,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: shell_drop (public/audio/fs/)"
+  },
+  "audio/freesound/179006": {
+   "type": "audio",
+   "source": "https://freesound.org/people/CodyGudmundsen/sounds/179006/",
+   "author": "CodyGudmundsen",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Bullet Casing On Concrete 1",
+   "credit_order": 17,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: shell_drop (public/audio/fs/)"
+  },
+  "audio/freesound/196719": {
+   "type": "audio",
+   "source": "https://freesound.org/people/PaulMorek/sounds/196719/",
+   "author": "PaulMorek",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: spitter_idle (public/audio/fs/)"
+  },
+  "audio/freesound/196722": {
+   "type": "audio",
+   "source": "https://freesound.org/people/PaulMorek/sounds/196722/",
+   "author": "PaulMorek",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: spitter_idle, spitter_death (public/audio/fs/)"
+  },
+  "audio/freesound/205753": {
+   "type": "audio",
+   "source": "https://freesound.org/people/scorpion67890/sounds/205753/",
+   "author": "scorpion67890",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_idle, crawler_windup (public/audio/fs/)"
+  },
+  "audio/freesound/205754": {
+   "type": "audio",
+   "source": "https://freesound.org/people/scorpion67890/sounds/205754/",
+   "author": "scorpion67890",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_windup (public/audio/fs/)"
+  },
+  "audio/freesound/263513": {
+   "type": "audio",
+   "source": "https://freesound.org/people/wadaltmon/sounds/263513/",
+   "author": "wadaltmon",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_mag_out, vajra_mag_in, vajra_bolt, switch (public/audio/fs/)"
+  },
+  "audio/freesound/315775": {
+   "type": "audio",
+   "source": "https://freesound.org/people/bevibeldesign/sounds/315775/",
+   "author": "bevibeldesign",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_idle (public/audio/fs/)"
+  },
+  "audio/freesound/337240": {
+   "type": "audio",
+   "source": "https://freesound.org/people/adrilahan/sounds/337240/",
+   "author": "adrilahan",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: gun_echo (public/audio/fs/)"
+  },
+  "audio/freesound/347410": {
+   "type": "audio",
+   "source": "https://freesound.org/people/zerokingfull/sounds/347410/",
+   "author": "zerokingfull",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_death (public/audio/fs/)"
+  },
+  "audio/freesound/370304": {
+   "type": "audio",
+   "source": "https://freesound.org/people/morganpurkis/sounds/370304/",
+   "author": "morganpurkis",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: gun_tail_lane (public/audio/fs/)"
+  },
+  "audio/freesound/371041": {
+   "type": "audio",
+   "source": "https://freesound.org/people/morganpurkis/sounds/371041/",
+   "author": "morganpurkis",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_body, trishul_body (public/audio/fs/)"
+  },
+  "audio/freesound/386845": {
+   "type": "audio",
+   "source": "https://freesound.org/people/morganpurkis/sounds/386845/",
+   "author": "morganpurkis",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_body (public/audio/fs/)"
+  },
+  "audio/freesound/405504": {
+   "type": "audio",
+   "source": "https://freesound.org/people/LilMati/sounds/405504/",
+   "author": "LilMati",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: trishul_crack (public/audio/fs/)"
+  },
+  "audio/freesound/416049": {
+   "type": "audio",
+   "source": "https://freesound.org/people/giddster/sounds/416049/",
+   "author": "giddster",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: enemy_death (public/audio/fs/)"
+  },
+  "audio/freesound/416051": {
+   "type": "audio",
+   "source": "https://freesound.org/people/giddster/sounds/416051/",
+   "author": "giddster",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: enemy_death (public/audio/fs/)"
+  },
+  "audio/freesound/416052": {
+   "type": "audio",
+   "source": "https://freesound.org/people/giddster/sounds/416052/",
+   "author": "giddster",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: enemy_death (public/audio/fs/)"
+  },
+  "audio/freesound/416053": {
+   "type": "audio",
+   "source": "https://freesound.org/people/giddster/sounds/416053/",
+   "author": "giddster",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_lunge (public/audio/fs/)"
+  },
+  "audio/freesound/423301": {
+   "type": "audio",
+   "source": "https://freesound.org/people/u1769092/sounds/423301/",
+   "author": "u1769092",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: impact_flesh (public/audio/fs/)"
+  },
+  "audio/freesound/427597": {
+   "type": "audio",
+   "source": "https://freesound.org/people/michorvath/sounds/427597/",
+   "author": "michorvath",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: gun_tail_plaza, gun_echo (public/audio/fs/)"
+  },
+  "audio/freesound/442957": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/442957/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_lunge (public/audio/fs/)"
+  },
+  "audio/freesound/442966": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/442966/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_stun (public/audio/fs/)"
+  },
+  "audio/freesound/446001": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Breviceps/sounds/446001/",
+   "author": "Breviceps",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: spitter_charge (public/audio/fs/)"
+  },
+  "audio/freesound/450853": {
+   "type": "audio",
+   "source": "https://freesound.org/people/kyles/sounds/450853/",
+   "author": "kyles",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_body (public/audio/fs/)"
+  },
+  "audio/freesound/457475": {
+   "type": "audio",
+   "source": "https://freesound.org/people/princessemilu/sounds/457475/",
+   "author": "princessemilu",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_bite (public/audio/fs/)"
+  },
+  "audio/freesound/466830": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Breviceps/sounds/466830/",
+   "author": "Breviceps",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_charge (public/audio/fs/)"
+  },
+  "audio/freesound/473846": {
+   "type": "audio",
+   "source": "https://freesound.org/people/LilMati/sounds/473846/",
+   "author": "LilMati",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: trishul_crack, trishul_body (public/audio/fs/)"
+  },
+  "audio/freesound/476083": {
+   "type": "audio",
+   "source": "https://freesound.org/people/icyjim/sounds/476083/",
+   "author": "icyjim",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_roar (public/audio/fs/)"
+  },
+  "audio/freesound/478057": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Abacagi/sounds/478057/",
+   "author": "Abacagi",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: hit (public/audio/fs/)"
+  },
+  "audio/freesound/500734": {
+   "type": "audio",
+   "source": "https://freesound.org/people/waxsocks/sounds/500734/",
+   "author": "waxsocks",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: spitter_spit (public/audio/fs/)"
+  },
+  "audio/freesound/504626": {
+   "type": "audio",
+   "source": "https://freesound.org/people/leonelmail/sounds/504626/",
+   "author": "leonelmail",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_death (public/audio/fs/)"
+  },
+  "audio/freesound/517744": {
+   "type": "audio",
+   "source": "https://freesound.org/people/danlucaz/sounds/517744/",
+   "author": "danlucaz",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: player_hurt (public/audio/fs/)"
+  },
+  "audio/freesound/522091": {
+   "type": "audio",
+   "source": "https://freesound.org/people/magnuswaker/sounds/522091/",
+   "author": "magnuswaker",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: kill_confirm (public/audio/fs/)"
+  },
+  "audio/freesound/523059": {
+   "type": "audio",
+   "source": "https://freesound.org/people/magnuswaker/sounds/523059/",
+   "author": "magnuswaker",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: shell_drop (public/audio/fs/)"
+  },
+  "audio/freesound/555420": {
+   "type": "audio",
+   "source": "https://freesound.org/people/tonsil5/sounds/555420/",
+   "author": "tonsil5",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: enemy_hurt (public/audio/fs/)"
+  },
+  "audio/freesound/555422": {
+   "type": "audio",
+   "source": "https://freesound.org/people/tonsil5/sounds/555422/",
+   "author": "tonsil5",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: enemy_hurt (public/audio/fs/)"
+  },
+  "audio/freesound/555425": {
+   "type": "audio",
+   "source": "https://freesound.org/people/tonsil5/sounds/555425/",
+   "author": "tonsil5",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: enemy_hurt (public/audio/fs/)"
+  },
+  "audio/freesound/563015": {
+   "type": "audio",
+   "source": "https://freesound.org/people/florianreichelt/sounds/563015/",
+   "author": "florianreichelt",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: gun_tail_plaza, gun_tail_lane (public/audio/fs/)"
+  },
+  "audio/freesound/564480": {
+   "type": "audio",
+   "source": "https://freesound.org/people/lumikon/sounds/564480/",
+   "author": "lumikon",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: trishul_crack, trishul_body (public/audio/fs/)"
+  },
+  "audio/freesound/569497": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Sheyvan/sounds/569497/",
+   "author": "Sheyvan",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: impact_stone (public/audio/fs/)"
+  },
+  "audio/freesound/569506": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Sheyvan/sounds/569506/",
+   "author": "Sheyvan",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: impact_stone (public/audio/fs/)"
+  },
+  "audio/freesound/634619": {
+   "type": "audio",
+   "source": "https://freesound.org/people/halogiw946/sounds/634619/",
+   "author": "halogiw946",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: kill_confirm (public/audio/fs/)"
+  },
+  "audio/freesound/673320": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Dentrabert/sounds/673320/",
+   "author": "Dentrabert",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: trishul_pump (public/audio/fs/)"
+  },
+  "audio/freesound/674742": {
+   "type": "audio",
+   "source": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/674742/",
+   "author": "serøutōnin--deprivəd",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_mag_out, vajra_mag_in (public/audio/fs/)"
+  },
+  "audio/freesound/677662": {
+   "type": "audio",
+   "source": "https://freesound.org/people/zekybomb/sounds/677662/",
+   "author": "zekybomb",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: trishul_pump (public/audio/fs/)"
+  },
+  "audio/freesound/703247": {
+   "type": "audio",
+   "source": "https://freesound.org/people/xkeril/sounds/703247/",
+   "author": "xkeril",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_land, warden_death (public/audio/fs/)"
+  },
+  "audio/freesound/703248": {
+   "type": "audio",
+   "source": "https://freesound.org/people/xkeril/sounds/703248/",
+   "author": "xkeril",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_impact (public/audio/fs/)"
+  },
+  "audio/freesound/707685": {
+   "type": "audio",
+   "source": "https://freesound.org/people/PJ_Bear/sounds/707685/",
+   "author": "PJ_Bear",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_idle (public/audio/fs/)"
+  },
+  "audio/freesound/721601": {
+   "type": "audio",
+   "source": "https://freesound.org/people/DasWaff/sounds/721601/",
+   "author": "DasWaff",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_step (public/audio/fs/)"
+  },
+  "audio/freesound/734096": {
+   "type": "audio",
+   "source": "https://freesound.org/people/modusmogulus/sounds/734096/",
+   "author": "modusmogulus",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: gun_tail_plaza (public/audio/fs/)"
+  },
+  "audio/freesound/758633": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Andrastos87/sounds/758633/",
+   "author": "Andrastos87",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: glob_splash (public/audio/fs/)"
+  },
+  "audio/freesound/758900": {
+   "type": "audio",
+   "source": "https://freesound.org/people/TheKingOfGeeks360/sounds/758900/",
+   "author": "TheKingOfGeeks360",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_windup (public/audio/fs/)"
+  },
+  "audio/freesound/779805": {
+   "type": "audio",
+   "source": "https://freesound.org/people/modusmogulus/sounds/779805/",
+   "author": "modusmogulus",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: kill_confirm, player_hurt (public/audio/fs/)"
+  },
+  "audio/freesound/789388": {
+   "type": "audio",
+   "source": "https://freesound.org/people/modusmogulus/sounds/789388/",
+   "author": "modusmogulus",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: impact_stone (public/audio/fs/)"
+  },
+  "audio/freesound/800277": {
+   "type": "audio",
+   "source": "https://freesound.org/people/SecureSubset/sounds/800277/",
+   "author": "SecureSubset",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: crawler_idle (public/audio/fs/)"
+  },
+  "audio/freesound/812538": {
+   "type": "audio",
+   "source": "https://freesound.org/people/Yoyamen1212/sounds/812538/",
+   "author": "Yoyamen1212",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: warden_impact, warden_step (public/audio/fs/)"
+  },
+  "audio/freesound/815476": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/815476/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: gun_tail_lane (public/audio/fs/)"
+  },
+  "audio/freesound/816237": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/816237/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: kill_confirm, crawler_bite (public/audio/fs/)"
+  },
+  "audio/freesound/854207": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/854207/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_crack (public/audio/fs/)"
+  },
+  "audio/freesound/854228": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/854228/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_crack, gun_tail_lane (public/audio/fs/)"
+  },
+  "audio/freesound/854230": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/854230/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_crack, gun_tail_lane (public/audio/fs/)"
+  },
+  "audio/freesound/854231": {
+   "type": "audio",
+   "source": "https://freesound.org/people/qubodup/sounds/854231/",
+   "author": "qubodup",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_crack (public/audio/fs/)"
+  },
+  "audio/freesound/855655": {
+   "type": "audio",
+   "source": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/855655/",
+   "author": "serøutōnin--deprivəd",
+   "license": "CC0",
+   "credit_required": false,
+   "in_game": true,
+   "notes": "modified (trimmed, filtered, mixed, normalised) into: vajra_crack, vajra_body (public/audio/fs/)"
   }
  }
 }

@@ -28,3 +28,26 @@ For engines that don't support meshopt/WebP, re-export from `art/_public_backup/
 Assets fetched by a full load (explore mode): **49.1 MB → 20.7 MB**; headless time-to-ready 46 s → 32 s.
 GLBs 37.1 → 13.3 MB (e.g. Charminar 8.6 → 1.1, spiderthing 4.0 → 1.7, bhelpuri cart 2.1 → 0.44); JPEG textures
 15.7 → 9.0 MB (Charminar weathering 4.2 → 2.3); HDRI 7.1 → 1.8 MB.
+
+## Audio (Freesound pipeline, 2026-11-19)
+Combat and creature sounds are built from **Freesound** recordings (CC0 first; CC BY only where clearly better and then
+credited). In-house synth renders (`tools/dev/export_audio.mjs`) remain for UI/mission/ambience sounds, and the Web Audio
+synth recipes in `Audio.ts` are still the fallback for anything that fails to load (`?synthaudio` forces it).
+
+| Step | Tool | What it does |
+|---|---|---|
+| Search | `node tools/audio/freesound.mjs search "<query>" [--any] [--max s]` | CC0 only by default (`--any` adds CC BY; NC / sampling+ never). Key: `FREESOUND_API_KEY` in `.env.local` (git-ignored). |
+| Fetch | `node tools/audio/freesound.mjs fetch <id> <dir>` | HQ OGG preview + licence/author JSON (refuses other licences). |
+| Inspect | `node tools/audio/analyze.mjs <files…>` | Duration, peak, events (start/end, level, brightness, low-end share) to pick cut points. |
+| Build | `node tools/audio/build.mjs [name…]` | Renders `tools/audio/recipes.mjs` (trim to onset, filter, pitch, fades, mixes, loudness-normalise, peak −1 dBFS) to `public/audio/fs/<name>_<n>.m4a` (AAC mono 80–96 kbps), merges them into `public/audio/manifest.json` (`files` = random variants, `sources` = provenance) and writes one `audio/freesound/<id>` entry per source into `data/assets.json` (CC BY ones get `credit_order`, so they show in the credits). Sources are cached in `tools/audio/.cache/` (git-ignored, re-fetched on demand). |
+
+Run `build.mjs` again after any `export_audio.mjs` run (that tool rewrites the manifest from scratch).
+
+Runtime (`src/engine/babylon/Audio.ts`, `CreatureAudio.ts`): gunshots are layered (crack + body + tail; the tail
+crossfades between a short "lane" slap and a long "plaza" echo from an 8-ray openness probe around the player, plus a
+delayed distant echo in the open; each shot cuts the previous tail so bursts stay clean). Positional sounds use HRTF
+panning, distance low-pass and a line-of-sight muffle behind walls. Reload phases (mag out / in, bolt; shells + pump)
+are timed to the reload motion in `WeaponView.ts`. Awake enemies near the player vocalise on random timers; the Warden
+has distance-paced footsteps.
+
+Total: about 0.95 MB of new audio (`public/audio/fs/`), 111 decoded files with the in-house ones.

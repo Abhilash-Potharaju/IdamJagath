@@ -17,6 +17,8 @@ import { EnemyViews } from "../engine/babylon/EnemyViews";
 import { MissionView } from "../engine/babylon/MissionView";
 import { HUD } from "../engine/babylon/HUD";
 import { Audio, type SoundName } from "../engine/babylon/Audio";
+import { CreatureAudio } from "../engine/babylon/CreatureAudio";
+import { Vec3 } from "../core/math";
 import { fromV3, type DamageFn } from "../engine/babylon/convert";
 import { effective, BASE_FOV_DEG, type Settings } from "../ui/settings";
 
@@ -45,6 +47,7 @@ export class Game {
   readonly weapon: WeaponView;
   readonly enemyViews: EnemyViews;
   readonly mission: MissionView;
+  private creatureAudio!: CreatureAudio;
   readonly explore = params.has("explore");
   readonly zoo = params.has("zoo");
   /** Shadow/SSAO/SSR handles (see Graphics.ts). */
@@ -164,6 +167,12 @@ export class Game {
   private wireEvents(): void {
     const ev = this.world.events, hud = this.hud, audio = this.audio;
     ev.on("sound", (e) => audio.play(e.name as SoundName, e.at));
+    // Acoustics: gun tails follow how open the space is (raycasts); sounds behind walls are muffled (line of sight)
+    const v = (p: { x: number; y: number; z: number }) => new Vec3(p.x, p.y, p.z);
+    audio.spaceProbe = (from, dir, range) => this.physics.raycast(v(from), v(dir), range)?.distance ?? null;
+    audio.occlusion = (from, to) => !this.physics.lineOfSight(v(from), v(to));
+    ev.on("impact", (e) => { if (e.kind === "world") audio.play("impact_stone", e.point); });
+    this.creatureAudio = new CreatureAudio(this.world, audio);
     ev.on("message", (e) => hud.message(e.text, e.seconds));
     ev.on("hint", (e) => { if (this.ui.showHints) hud.message(e.text, 3.5); });
     hud.onObjectiveCue = () => audio.play("switch");
@@ -208,6 +217,7 @@ export class Game {
     const g = this.world.arsenal.gun;
     this.hud.setWeaponState(g.ammo, g.spec.mag, g.reloading > 0 ? 1 - g.reloading / g.spec.reloadTime : null);
     this.audio.update(this.camera.camera.position, this.world.player.yaw);
+    this.creatureAudio.update(dt, this.camera.camera.position);
     this.weapon.update(dt, this.input.frameDX, this.input.frameDY);
     this.enemyViews.render(alpha, dt);
     this.mission.update(dt, this.camera.camera, this.engine);

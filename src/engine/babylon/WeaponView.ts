@@ -3,7 +3,13 @@ import type { GameWorld } from "../../core/world";
 import { spring } from "../../core/math";
 import type { HUD } from "./HUD";
 import { Fx, flashTexture } from "./fx";
-import type { Audio } from "./Audio";
+import type { Audio, SoundName } from "./Audio";
+
+/** Reload sound phases per weapon id: [fraction of reloadTime, sound]. Visual/audio only. */
+const RELOAD_PHASES: Record<string, readonly (readonly [number, SoundName])[]> = {
+  vajra: [[0.1, "vajra_mag_out"], [0.56, "vajra_mag_in"], [0.8, "vajra_bolt"]],
+  trishul: [[0.16, "trishul_shell"], [0.33, "trishul_shell"], [0.5, "trishul_shell"], [0.76, "trishul_pump"]],
+};
 import { place } from "../../game/Props";
 import { toV3 } from "./convert";
 import { GAMEPLAY } from "../../data/gameplay";
@@ -204,6 +210,7 @@ export class WeaponView {
     const bobY = -Math.abs(Math.sin(p.bobPhase)) * 0.016 * bobA;
     const breath = Math.sin(this.time * 1.7) * 0.004 * (1 - z);
     let rDip = 0, rRoll = 0, rPitch = 0;
+    this.reloadSounds(gun);
     if (gun.reloading > 0) {
       const r = 1 - gun.reloading / gun.spec.reloadTime;
       const inOut = Math.min(1, r / 0.2) * Math.min(1, (1 - r) / 0.2);
@@ -225,6 +232,23 @@ export class WeaponView {
       -p.strafe * 0.035 * sw + this.kickRoll + rRoll + sprint * 0.3 + drop * 0.6,
     );
     this.updateScope(z, g);
+  }
+
+  /**
+   * Mechanical reload sounds at fixed points of the reload (fraction of reloadTime), in time with the motion above
+   * (the mag slap is at 0.58–0.66). Switching weapons cancels the reload, and with it the remaining phases.
+   */
+  private reloadPhase = 0;
+  private reloadGun: unknown = null;
+  private reloadSounds(gun: { reloading: number; spec: { id: string; reloadTime: number } }): void {
+    if (gun.reloading <= 0 || gun !== this.reloadGun) {
+      this.reloadPhase = 0;
+      this.reloadGun = gun.reloading > 0 ? gun : null;
+      if (gun.reloading <= 0) return;
+    }
+    const phases = RELOAD_PHASES[gun.spec.id] ?? RELOAD_PHASES.vajra;
+    const r = 1 - gun.reloading / gun.spec.reloadTime;
+    while (this.reloadPhase < phases.length && r >= phases[this.reloadPhase][0]) this.audio.play(phases[this.reloadPhase++][1]);
   }
 
   // ── Scope (ADS) view: as zoom completes, the gun fades out and a scope overlay fades in, so muzzle flash, smoke and
