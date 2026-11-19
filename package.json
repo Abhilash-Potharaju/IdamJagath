@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --dir tests",
     "assets:optimize": "node tools/assets/optimize_glb.mjs && node tools/assets/optimize_textures.mjs && blender --background --factory-startup --python tools/assets/resize_hdri.py"
   },
   "devDependencies": {

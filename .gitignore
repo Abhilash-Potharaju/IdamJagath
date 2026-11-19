@@ -36,3 +36,6 @@ art/sketchfab/charminar/blend_src/
 
 # Pre-optimization copies of public/ assets (reversible; see docs/ASSETS.md)
 art/_public_backup/
+
+# Agent worktrees (Claude Code parallel workstreams)
+.claude/worktrees/
