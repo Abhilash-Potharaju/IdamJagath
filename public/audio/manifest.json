@@ -1,5 +1,5 @@
 {
- "$doc": "In-house generated sound effects (rendered from the synth recipes in src/game/Audio.ts by tools/dev/export_audio.mjs). License: project-owned.",
+ "$doc": "Sound files the game loads (Audio.ts). 'generated in-house' = rendered from the synth recipes by tools/dev/export_audio.mjs (project-owned). 'freesound' = built by tools/audio/build.mjs from CC0 / CC BY Freesound sources (listed per sound; CC BY ones are credited via data/assets.json). 'files' are random variants.",
  "sounds": [
   {
    "name": "vajra_fire",
@@ -14,28 +14,63 @@
    "source": "generated in-house"
   },
   {
-   "name": "reload",
-   "file": "reload.m4a",
-   "duration": 1.1,
-   "source": "generated in-house"
-  },
-  {
    "name": "switch",
-   "file": "switch.m4a",
-   "duration": 0.4,
-   "source": "generated in-house"
+   "file": "fs/switch_1.m4a",
+   "files": [
+    "fs/switch_1.m4a",
+    "fs/switch_2.m4a"
+   ],
+   "duration": 0.158,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 263513,
+     "author": "wadaltmon",
+     "license": "CC0",
+     "url": "https://freesound.org/people/wadaltmon/sounds/263513/"
+    }
+   ]
   },
   {
    "name": "hit",
-   "file": "hit.m4a",
-   "duration": 0.35,
-   "source": "generated in-house"
+   "file": "fs/hit_1.m4a",
+   "files": [
+    "fs/hit_1.m4a"
+   ],
+   "duration": 0.109,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 478057,
+     "author": "Abacagi",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Abacagi/sounds/478057/"
+    }
+   ]
   },
   {
    "name": "player_hurt",
-   "file": "player_hurt.m4a",
-   "duration": 0.55,
-   "source": "generated in-house"
+   "file": "fs/player_hurt_1.m4a",
+   "files": [
+    "fs/player_hurt_1.m4a",
+    "fs/player_hurt_2.m4a"
+   ],
+   "duration": 0.387,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 517744,
+     "author": "danlucaz",
+     "license": "CC0",
+     "url": "https://freesound.org/people/danlucaz/sounds/517744/"
+    },
+    {
+     "id": 779805,
+     "author": "modusmogulus",
+     "license": "CC0",
+     "url": "https://freesound.org/people/modusmogulus/sounds/779805/"
+    }
+   ]
   },
   {
    "name": "pickup",
@@ -51,87 +86,339 @@
   },
   {
    "name": "crawler_windup",
-   "file": "crawler_windup.m4a",
-   "duration": 0.8,
-   "source": "generated in-house"
+   "file": "fs/crawler_windup_1.m4a",
+   "files": [
+    "fs/crawler_windup_1.m4a",
+    "fs/crawler_windup_2.m4a"
+   ],
+   "duration": 0.85,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 205754,
+     "author": "scorpion67890",
+     "license": "CC0",
+     "url": "https://freesound.org/people/scorpion67890/sounds/205754/"
+    },
+    {
+     "id": 758900,
+     "author": "TheKingOfGeeks360",
+     "license": "CC0",
+     "url": "https://freesound.org/people/TheKingOfGeeks360/sounds/758900/"
+    },
+    {
+     "id": 205753,
+     "author": "scorpion67890",
+     "license": "CC0",
+     "url": "https://freesound.org/people/scorpion67890/sounds/205753/"
+    },
+    {
+     "id": 106126,
+     "author": "j1987",
+     "license": "CC0",
+     "url": "https://freesound.org/people/j1987/sounds/106126/"
+    }
+   ]
   },
   {
    "name": "crawler_lunge",
-   "file": "crawler_lunge.m4a",
-   "duration": 0.6,
-   "source": "generated in-house"
+   "file": "fs/crawler_lunge_1.m4a",
+   "files": [
+    "fs/crawler_lunge_1.m4a",
+    "fs/crawler_lunge_2.m4a"
+   ],
+   "duration": 0.623,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 416053,
+     "author": "giddster",
+     "license": "CC0",
+     "url": "https://freesound.org/people/giddster/sounds/416053/"
+    },
+    {
+     "id": 442957,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/442957/"
+    }
+   ]
   },
   {
    "name": "crawler_bite",
-   "file": "crawler_bite.m4a",
-   "duration": 0.45,
-   "source": "generated in-house"
+   "file": "fs/crawler_bite_1.m4a",
+   "files": [
+    "fs/crawler_bite_1.m4a",
+    "fs/crawler_bite_2.m4a"
+   ],
+   "duration": 0.349,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 816237,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/816237/"
+    },
+    {
+     "id": 457475,
+     "author": "princessemilu",
+     "license": "CC0",
+     "url": "https://freesound.org/people/princessemilu/sounds/457475/"
+    }
+   ]
   },
   {
    "name": "spitter_charge",
-   "file": "spitter_charge.m4a",
-   "duration": 0.95,
-   "source": "generated in-house"
+   "file": "fs/spitter_charge_1.m4a",
+   "files": [
+    "fs/spitter_charge_1.m4a"
+   ],
+   "duration": 0.88,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 446001,
+     "author": "Breviceps",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Breviceps/sounds/446001/"
+    }
+   ]
   },
   {
    "name": "spitter_spit",
-   "file": "spitter_spit.m4a",
-   "duration": 0.52,
-   "source": "generated in-house"
+   "file": "fs/spitter_spit_1.m4a",
+   "files": [
+    "fs/spitter_spit_1.m4a",
+    "fs/spitter_spit_2.m4a"
+   ],
+   "duration": 0.4,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 500734,
+     "author": "waxsocks",
+     "license": "CC0",
+     "url": "https://freesound.org/people/waxsocks/sounds/500734/"
+    },
+    {
+     "id": 147017,
+     "author": "JustInvoke",
+     "license": "CC0",
+     "url": "https://freesound.org/people/JustInvoke/sounds/147017/"
+    }
+   ]
   },
   {
    "name": "glob_splash",
-   "file": "glob_splash.m4a",
-   "duration": 0.95,
-   "source": "generated in-house"
+   "file": "fs/glob_splash_1.m4a",
+   "files": [
+    "fs/glob_splash_1.m4a"
+   ],
+   "duration": 1.17,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 147017,
+     "author": "JustInvoke",
+     "license": "CC0",
+     "url": "https://freesound.org/people/JustInvoke/sounds/147017/"
+    },
+    {
+     "id": 758633,
+     "author": "Andrastos87",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Andrastos87/sounds/758633/"
+    }
+   ]
   },
   {
    "name": "warden_land",
-   "file": "warden_land.m4a",
-   "duration": 1.3,
-   "source": "generated in-house"
+   "file": "fs/warden_land_1.m4a",
+   "files": [
+    "fs/warden_land_1.m4a"
+   ],
+   "duration": 1.577,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 77027,
+     "author": "andysm",
+     "license": "CC0",
+     "url": "https://freesound.org/people/andysm/sounds/77027/"
+    },
+    {
+     "id": 703247,
+     "author": "xkeril",
+     "license": "CC0",
+     "url": "https://freesound.org/people/xkeril/sounds/703247/"
+    }
+   ]
   },
   {
    "name": "warden_roar",
-   "file": "warden_roar.m4a",
-   "duration": 1.45,
-   "source": "generated in-house"
+   "file": "fs/warden_roar_1.m4a",
+   "files": [
+    "fs/warden_roar_1.m4a"
+   ],
+   "duration": 2.6,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 476083,
+     "author": "icyjim",
+     "license": "CC0",
+     "url": "https://freesound.org/people/icyjim/sounds/476083/"
+    }
+   ]
   },
   {
    "name": "warden_charge",
-   "file": "warden_charge.m4a",
-   "duration": 2.2,
-   "source": "generated in-house"
+   "file": "fs/warden_charge_1.m4a",
+   "files": [
+    "fs/warden_charge_1.m4a"
+   ],
+   "duration": 2.229,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 466830,
+     "author": "Breviceps",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Breviceps/sounds/466830/"
+    }
+   ]
   },
   {
    "name": "warden_impact",
-   "file": "warden_impact.m4a",
-   "duration": 1.15,
-   "source": "generated in-house"
+   "file": "fs/warden_impact_1.m4a",
+   "files": [
+    "fs/warden_impact_1.m4a"
+   ],
+   "duration": 1.278,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 812538,
+     "author": "Yoyamen1212",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Yoyamen1212/sounds/812538/"
+    },
+    {
+     "id": 703248,
+     "author": "xkeril",
+     "license": "CC0",
+     "url": "https://freesound.org/people/xkeril/sounds/703248/"
+    }
+   ]
   },
   {
    "name": "warden_stun",
-   "file": "warden_stun.m4a",
-   "duration": 1.5,
-   "source": "generated in-house"
+   "file": "fs/warden_stun_1.m4a",
+   "files": [
+    "fs/warden_stun_1.m4a"
+   ],
+   "duration": 1.448,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 442966,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/442966/"
+    }
+   ]
   },
   {
    "name": "warden_death",
-   "file": "warden_death.m4a",
-   "duration": 3,
-   "source": "generated in-house"
+   "file": "fs/warden_death_1.m4a",
+   "files": [
+    "fs/warden_death_1.m4a"
+   ],
+   "duration": 3.326,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 347410,
+     "author": "zerokingfull",
+     "license": "CC0",
+     "url": "https://freesound.org/people/zerokingfull/sounds/347410/"
+    },
+    {
+     "id": 504626,
+     "author": "leonelmail",
+     "license": "CC0",
+     "url": "https://freesound.org/people/leonelmail/sounds/504626/"
+    },
+    {
+     "id": 703247,
+     "author": "xkeril",
+     "license": "CC0",
+     "url": "https://freesound.org/people/xkeril/sounds/703247/"
+    }
+   ]
   },
   {
    "name": "enemy_hurt",
-   "file": "enemy_hurt.m4a",
-   "duration": 0.4,
-   "source": "generated in-house"
+   "file": "fs/enemy_hurt_1.m4a",
+   "files": [
+    "fs/enemy_hurt_1.m4a",
+    "fs/enemy_hurt_2.m4a",
+    "fs/enemy_hurt_3.m4a"
+   ],
+   "duration": 0.417,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 555425,
+     "author": "tonsil5",
+     "license": "CC0",
+     "url": "https://freesound.org/people/tonsil5/sounds/555425/"
+    },
+    {
+     "id": 555422,
+     "author": "tonsil5",
+     "license": "CC0",
+     "url": "https://freesound.org/people/tonsil5/sounds/555422/"
+    },
+    {
+     "id": 555420,
+     "author": "tonsil5",
+     "license": "CC0",
+     "url": "https://freesound.org/people/tonsil5/sounds/555420/"
+    }
+   ]
   },
   {
    "name": "enemy_death",
-   "file": "enemy_death.m4a",
-   "duration": 0.75,
-   "source": "generated in-house"
+   "file": "fs/enemy_death_1.m4a",
+   "files": [
+    "fs/enemy_death_1.m4a",
+    "fs/enemy_death_2.m4a",
+    "fs/enemy_death_3.m4a"
+   ],
+   "duration": 1.445,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 416049,
+     "author": "giddster",
+     "license": "CC0",
+     "url": "https://freesound.org/people/giddster/sounds/416049/"
+    },
+    {
+     "id": 416051,
+     "author": "giddster",
+     "license": "CC0",
+     "url": "https://freesound.org/people/giddster/sounds/416051/"
+    },
+    {
+     "id": 416052,
+     "author": "giddster",
+     "license": "CC0",
+     "url": "https://freesound.org/people/giddster/sounds/416052/"
+    }
+   ]
   },
   {
    "name": "pylon_hit",
@@ -201,27 +488,629 @@
   },
   {
    "name": "shell_drop",
-   "file": "shell_drop.m4a",
-   "duration": 0.5,
-   "source": "generated in-house"
+   "file": "fs/shell_drop_1.m4a",
+   "files": [
+    "fs/shell_drop_1.m4a",
+    "fs/shell_drop_2.m4a",
+    "fs/shell_drop_3.m4a",
+    "fs/shell_drop_4.m4a"
+   ],
+   "duration": 0.956,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 179005,
+     "author": "CodyGudmundsen",
+     "license": "CC BY",
+     "url": "https://freesound.org/people/CodyGudmundsen/sounds/179005/"
+    },
+    {
+     "id": 179006,
+     "author": "CodyGudmundsen",
+     "license": "CC BY",
+     "url": "https://freesound.org/people/CodyGudmundsen/sounds/179006/"
+    },
+    {
+     "id": 523059,
+     "author": "magnuswaker",
+     "license": "CC0",
+     "url": "https://freesound.org/people/magnuswaker/sounds/523059/"
+    }
+   ]
   },
   {
    "name": "impact_stone",
-   "file": "impact_stone.m4a",
-   "duration": 0.43,
-   "source": "generated in-house"
+   "file": "fs/impact_stone_1.m4a",
+   "files": [
+    "fs/impact_stone_1.m4a",
+    "fs/impact_stone_2.m4a",
+    "fs/impact_stone_3.m4a",
+    "fs/impact_stone_4.m4a"
+   ],
+   "duration": 0.427,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 789388,
+     "author": "modusmogulus",
+     "license": "CC0",
+     "url": "https://freesound.org/people/modusmogulus/sounds/789388/"
+    },
+    {
+     "id": 569506,
+     "author": "Sheyvan",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Sheyvan/sounds/569506/"
+    },
+    {
+     "id": 569497,
+     "author": "Sheyvan",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Sheyvan/sounds/569497/"
+    }
+   ]
   },
   {
    "name": "impact_flesh",
-   "file": "impact_flesh.m4a",
-   "duration": 0.41,
-   "source": "generated in-house"
+   "file": "fs/impact_flesh_1.m4a",
+   "files": [
+    "fs/impact_flesh_1.m4a",
+    "fs/impact_flesh_2.m4a",
+    "fs/impact_flesh_3.m4a",
+    "fs/impact_flesh_4.m4a",
+    "fs/impact_flesh_5.m4a",
+    "fs/impact_flesh_6.m4a",
+    "fs/impact_flesh_7.m4a"
+   ],
+   "duration": 0.3,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 423301,
+     "author": "u1769092",
+     "license": "CC0",
+     "url": "https://freesound.org/people/u1769092/sounds/423301/"
+    }
+   ]
   },
   {
    "name": "kill_confirm",
-   "file": "kill_confirm.m4a",
-   "duration": 0.43,
-   "source": "generated in-house"
+   "file": "fs/kill_confirm_1.m4a",
+   "files": [
+    "fs/kill_confirm_1.m4a",
+    "fs/kill_confirm_2.m4a"
+   ],
+   "duration": 0.386,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 779805,
+     "author": "modusmogulus",
+     "license": "CC0",
+     "url": "https://freesound.org/people/modusmogulus/sounds/779805/"
+    },
+    {
+     "id": 634619,
+     "author": "halogiw946",
+     "license": "CC0",
+     "url": "https://freesound.org/people/halogiw946/sounds/634619/"
+    },
+    {
+     "id": 522091,
+     "author": "magnuswaker",
+     "license": "CC0",
+     "url": "https://freesound.org/people/magnuswaker/sounds/522091/"
+    },
+    {
+     "id": 816237,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/816237/"
+    }
+   ]
+  },
+  {
+   "name": "vajra_crack",
+   "file": "fs/vajra_crack_1.m4a",
+   "files": [
+    "fs/vajra_crack_1.m4a",
+    "fs/vajra_crack_2.m4a",
+    "fs/vajra_crack_3.m4a",
+    "fs/vajra_crack_4.m4a",
+    "fs/vajra_crack_5.m4a"
+   ],
+   "duration": 0.218,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 854228,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/854228/"
+    },
+    {
+     "id": 854230,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/854230/"
+    },
+    {
+     "id": 854231,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/854231/"
+    },
+    {
+     "id": 854207,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/854207/"
+    },
+    {
+     "id": 855655,
+     "author": "serøutōnin--deprivəd",
+     "license": "CC0",
+     "url": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/855655/"
+    }
+   ]
+  },
+  {
+   "name": "vajra_body",
+   "file": "fs/vajra_body_1.m4a",
+   "files": [
+    "fs/vajra_body_1.m4a",
+    "fs/vajra_body_2.m4a",
+    "fs/vajra_body_3.m4a",
+    "fs/vajra_body_4.m4a"
+   ],
+   "duration": 0.448,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 386845,
+     "author": "morganpurkis",
+     "license": "CC0",
+     "url": "https://freesound.org/people/morganpurkis/sounds/386845/"
+    },
+    {
+     "id": 371041,
+     "author": "morganpurkis",
+     "license": "CC0",
+     "url": "https://freesound.org/people/morganpurkis/sounds/371041/"
+    },
+    {
+     "id": 855655,
+     "author": "serøutōnin--deprivəd",
+     "license": "CC0",
+     "url": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/855655/"
+    },
+    {
+     "id": 450853,
+     "author": "kyles",
+     "license": "CC0",
+     "url": "https://freesound.org/people/kyles/sounds/450853/"
+    }
+   ]
+  },
+  {
+   "name": "trishul_crack",
+   "file": "fs/trishul_crack_1.m4a",
+   "files": [
+    "fs/trishul_crack_1.m4a",
+    "fs/trishul_crack_2.m4a",
+    "fs/trishul_crack_3.m4a"
+   ],
+   "duration": 0.32,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 473846,
+     "author": "LilMati",
+     "license": "CC0",
+     "url": "https://freesound.org/people/LilMati/sounds/473846/"
+    },
+    {
+     "id": 564480,
+     "author": "lumikon",
+     "license": "CC0",
+     "url": "https://freesound.org/people/lumikon/sounds/564480/"
+    },
+    {
+     "id": 405504,
+     "author": "LilMati",
+     "license": "CC0",
+     "url": "https://freesound.org/people/LilMati/sounds/405504/"
+    }
+   ]
+  },
+  {
+   "name": "trishul_body",
+   "file": "fs/trishul_body_1.m4a",
+   "files": [
+    "fs/trishul_body_1.m4a",
+    "fs/trishul_body_2.m4a",
+    "fs/trishul_body_3.m4a"
+   ],
+   "duration": 0.723,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 564480,
+     "author": "lumikon",
+     "license": "CC0",
+     "url": "https://freesound.org/people/lumikon/sounds/564480/"
+    },
+    {
+     "id": 473846,
+     "author": "LilMati",
+     "license": "CC0",
+     "url": "https://freesound.org/people/LilMati/sounds/473846/"
+    },
+    {
+     "id": 371041,
+     "author": "morganpurkis",
+     "license": "CC0",
+     "url": "https://freesound.org/people/morganpurkis/sounds/371041/"
+    }
+   ]
+  },
+  {
+   "name": "gun_tail_plaza",
+   "file": "fs/gun_tail_plaza_1.m4a",
+   "files": [
+    "fs/gun_tail_plaza_1.m4a",
+    "fs/gun_tail_plaza_2.m4a",
+    "fs/gun_tail_plaza_3.m4a"
+   ],
+   "duration": 3.341,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 563015,
+     "author": "florianreichelt",
+     "license": "CC0",
+     "url": "https://freesound.org/people/florianreichelt/sounds/563015/"
+    },
+    {
+     "id": 734096,
+     "author": "modusmogulus",
+     "license": "CC0",
+     "url": "https://freesound.org/people/modusmogulus/sounds/734096/"
+    },
+    {
+     "id": 427597,
+     "author": "michorvath",
+     "license": "CC0",
+     "url": "https://freesound.org/people/michorvath/sounds/427597/"
+    }
+   ]
+  },
+  {
+   "name": "gun_tail_lane",
+   "file": "fs/gun_tail_lane_1.m4a",
+   "files": [
+    "fs/gun_tail_lane_1.m4a",
+    "fs/gun_tail_lane_2.m4a",
+    "fs/gun_tail_lane_3.m4a"
+   ],
+   "duration": 0.917,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 563015,
+     "author": "florianreichelt",
+     "license": "CC0",
+     "url": "https://freesound.org/people/florianreichelt/sounds/563015/"
+    },
+    {
+     "id": 854228,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/854228/"
+    },
+    {
+     "id": 815476,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/815476/"
+    },
+    {
+     "id": 854230,
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/people/qubodup/sounds/854230/"
+    },
+    {
+     "id": 370304,
+     "author": "morganpurkis",
+     "license": "CC0",
+     "url": "https://freesound.org/people/morganpurkis/sounds/370304/"
+    }
+   ]
+  },
+  {
+   "name": "gun_echo",
+   "file": "fs/gun_echo_1.m4a",
+   "files": [
+    "fs/gun_echo_1.m4a",
+    "fs/gun_echo_2.m4a"
+   ],
+   "duration": 1.266,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 337240,
+     "author": "adrilahan",
+     "license": "CC0",
+     "url": "https://freesound.org/people/adrilahan/sounds/337240/"
+    },
+    {
+     "id": 427597,
+     "author": "michorvath",
+     "license": "CC0",
+     "url": "https://freesound.org/people/michorvath/sounds/427597/"
+    }
+   ]
+  },
+  {
+   "name": "vajra_mag_out",
+   "file": "fs/vajra_mag_out_1.m4a",
+   "files": [
+    "fs/vajra_mag_out_1.m4a",
+    "fs/vajra_mag_out_2.m4a",
+    "fs/vajra_mag_out_3.m4a"
+   ],
+   "duration": 0.417,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 263513,
+     "author": "wadaltmon",
+     "license": "CC0",
+     "url": "https://freesound.org/people/wadaltmon/sounds/263513/"
+    },
+    {
+     "id": 674742,
+     "author": "serøutōnin--deprivəd",
+     "license": "CC0",
+     "url": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/674742/"
+    }
+   ]
+  },
+  {
+   "name": "vajra_mag_in",
+   "file": "fs/vajra_mag_in_1.m4a",
+   "files": [
+    "fs/vajra_mag_in_1.m4a",
+    "fs/vajra_mag_in_2.m4a",
+    "fs/vajra_mag_in_3.m4a"
+   ],
+   "duration": 0.416,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 263513,
+     "author": "wadaltmon",
+     "license": "CC0",
+     "url": "https://freesound.org/people/wadaltmon/sounds/263513/"
+    },
+    {
+     "id": 674742,
+     "author": "serøutōnin--deprivəd",
+     "license": "CC0",
+     "url": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/674742/"
+    }
+   ]
+  },
+  {
+   "name": "vajra_bolt",
+   "file": "fs/vajra_bolt_1.m4a",
+   "files": [
+    "fs/vajra_bolt_1.m4a",
+    "fs/vajra_bolt_2.m4a"
+   ],
+   "duration": 0.468,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 263513,
+     "author": "wadaltmon",
+     "license": "CC0",
+     "url": "https://freesound.org/people/wadaltmon/sounds/263513/"
+    },
+    {
+     "id": 107793,
+     "author": "j1987",
+     "license": "CC0",
+     "url": "https://freesound.org/people/j1987/sounds/107793/"
+    }
+   ]
+  },
+  {
+   "name": "trishul_shell",
+   "file": "fs/trishul_shell_1.m4a",
+   "files": [
+    "fs/trishul_shell_1.m4a",
+    "fs/trishul_shell_2.m4a"
+   ],
+   "duration": 0.295,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 108793,
+     "author": "CeebFrack",
+     "license": "CC0",
+     "url": "https://freesound.org/people/CeebFrack/sounds/108793/"
+    }
+   ]
+  },
+  {
+   "name": "trishul_pump",
+   "file": "fs/trishul_pump_1.m4a",
+   "files": [
+    "fs/trishul_pump_1.m4a",
+    "fs/trishul_pump_2.m4a"
+   ],
+   "duration": 0.599,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 677662,
+     "author": "zekybomb",
+     "license": "CC0",
+     "url": "https://freesound.org/people/zekybomb/sounds/677662/"
+    },
+    {
+     "id": 673320,
+     "author": "Dentrabert",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Dentrabert/sounds/673320/"
+    }
+   ]
+  },
+  {
+   "name": "crawler_idle",
+   "file": "fs/crawler_idle_1.m4a",
+   "files": [
+    "fs/crawler_idle_1.m4a",
+    "fs/crawler_idle_2.m4a",
+    "fs/crawler_idle_3.m4a",
+    "fs/crawler_idle_4.m4a"
+   ],
+   "duration": 1.397,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 106126,
+     "author": "j1987",
+     "license": "CC0",
+     "url": "https://freesound.org/people/j1987/sounds/106126/"
+    },
+    {
+     "id": 800277,
+     "author": "SecureSubset",
+     "license": "CC0",
+     "url": "https://freesound.org/people/SecureSubset/sounds/800277/"
+    },
+    {
+     "id": 205753,
+     "author": "scorpion67890",
+     "license": "CC0",
+     "url": "https://freesound.org/people/scorpion67890/sounds/205753/"
+    }
+   ]
+  },
+  {
+   "name": "spitter_idle",
+   "file": "fs/spitter_idle_1.m4a",
+   "files": [
+    "fs/spitter_idle_1.m4a",
+    "fs/spitter_idle_2.m4a",
+    "fs/spitter_idle_3.m4a"
+   ],
+   "duration": 1.161,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 196719,
+     "author": "PaulMorek",
+     "license": "CC0",
+     "url": "https://freesound.org/people/PaulMorek/sounds/196719/"
+    },
+    {
+     "id": 196722,
+     "author": "PaulMorek",
+     "license": "CC0",
+     "url": "https://freesound.org/people/PaulMorek/sounds/196722/"
+    }
+   ]
+  },
+  {
+   "name": "spitter_death",
+   "file": "fs/spitter_death_1.m4a",
+   "files": [
+    "fs/spitter_death_1.m4a"
+   ],
+   "duration": 1.25,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 196722,
+     "author": "PaulMorek",
+     "license": "CC0",
+     "url": "https://freesound.org/people/PaulMorek/sounds/196722/"
+    }
+   ]
+  },
+  {
+   "name": "warden_idle",
+   "file": "fs/warden_idle_1.m4a",
+   "files": [
+    "fs/warden_idle_1.m4a",
+    "fs/warden_idle_2.m4a",
+    "fs/warden_idle_3.m4a",
+    "fs/warden_idle_4.m4a"
+   ],
+   "duration": 2.541,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 77632,
+     "author": "lendrick",
+     "license": "CC0",
+     "url": "https://freesound.org/people/lendrick/sounds/77632/"
+    },
+    {
+     "id": 77635,
+     "author": "lendrick",
+     "license": "CC0",
+     "url": "https://freesound.org/people/lendrick/sounds/77635/"
+    },
+    {
+     "id": 707685,
+     "author": "PJ_Bear",
+     "license": "CC0",
+     "url": "https://freesound.org/people/PJ_Bear/sounds/707685/"
+    },
+    {
+     "id": 315775,
+     "author": "bevibeldesign",
+     "license": "CC0",
+     "url": "https://freesound.org/people/bevibeldesign/sounds/315775/"
+    }
+   ]
+  },
+  {
+   "name": "warden_step",
+   "file": "fs/warden_step_1.m4a",
+   "files": [
+    "fs/warden_step_1.m4a",
+    "fs/warden_step_2.m4a",
+    "fs/warden_step_3.m4a",
+    "fs/warden_step_4.m4a"
+   ],
+   "duration": 0.7,
+   "source": "freesound (tools/audio/recipes.mjs)",
+   "sources": [
+    {
+     "id": 812538,
+     "author": "Yoyamen1212",
+     "license": "CC0",
+     "url": "https://freesound.org/people/Yoyamen1212/sounds/812538/"
+    },
+    {
+     "id": 721601,
+     "author": "DasWaff",
+     "license": "CC0",
+     "url": "https://freesound.org/people/DasWaff/sounds/721601/"
+    },
+    {
+     "id": 77027,
+     "author": "andysm",
+     "license": "CC0",
+     "url": "https://freesound.org/people/andysm/sounds/77027/"
+    }
+   ]
   }
  ],
  "ambience": {
