@@ -58,6 +58,7 @@ Run as parallel agents, each with separate file ownership.
 - **⚠️ Decision needed from the owner: what's on top?** (a) a sniper vantage point for the Warden fight, (b) a mission objective (a pylon or the captives), or (c) the secret.
 
 ## 3. Other backlog
+- **Unreproduced (owner, 2026-11-19): a crawler froze mid-attack.** In the left lane near the pylon closest to the start (crawler spawns around (-28, 22) / (-33, 26)), it stopped while attacking the player: glowing (a tell) but doing nothing. Seen once. Suspects: the Crawler state machine stuck in windup/lunge/recover (e.g. a lunge blocked by a wall or pocket filler, or a `canReach` false loop), the depenetration pushing it back every step, or B's hurt reaction / C's windup crouch pose holding while the core moves on. If it repeats: note where, the weapon used and whether it was hit; then log `state`, `tell`, `pos` of the stuck enemy via `__game.enemies`.
 - Lightmap: dark line at the lane start (z≈0); facades lack UV1 (not lightmapped); a 4K final bake; review light balance with `?nolightmap`.
 - UI: restart/quit reload the page; key rebinding; head-bob setter in core.
 - **JS bundle is about 11 MB** (all of Babylon imported). Switch to tree-shakeable deep imports (`@babylonjs/core/...`) or chunking to shrink it.
