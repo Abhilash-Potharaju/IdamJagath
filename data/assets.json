@@ -67,6 +67,18 @@
    "in_game": true,
    "notes": "modified: optimized (decimated, textures resized) for the web"
   },
+  "models/monsters/cyclops_brute.glb": {
+   "type": "model",
+   "source": "https://sketchfab.com/3d-models/cyclops-rig-e5cc86878c314f5bae6d7268bb7541d9",
+   "author": "SuperKapoo913",
+   "license": "CC BY 4.0",
+   "license_url": "http://creativecommons.org/licenses/by/4.0/",
+   "credit_required": true,
+   "credit_title": "Cyclops Rig",
+   "credit_order": 16,
+   "in_game": true,
+   "notes": "Warden skin. modified: web-optimized (WebP textures, meshopt); wet/red-glow materials, procedural stride/roar/charge/stun motion layered on its idle clip at runtime"
+  },
   "models/monsters/spiderthing.glb": {
    "type": "model",
    "source": "https://sketchfab.com/3d-models/spiderthing-take-3-10bb4cf49d304d64afd2b829666f6caf",

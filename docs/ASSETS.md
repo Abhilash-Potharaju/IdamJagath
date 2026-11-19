@@ -28,3 +28,18 @@ For engines that don't support meshopt/WebP, re-export from `art/_public_backup/
 Assets fetched by a full load (explore mode): **49.1 MB → 20.7 MB**; headless time-to-ready 46 s → 32 s.
 GLBs 37.1 → 13.3 MB (e.g. Charminar 8.6 → 1.1, spiderthing 4.0 → 1.7, bhelpuri cart 2.1 → 0.44); JPEG textures
 15.7 → 9.0 MB (Charminar weathering 4.2 → 2.3); HDRI 7.1 → 1.8 MB.
+
+## Monster models (`public/models/monsters/`)
+Skinned Sketchfab creatures (CC BY, credited from `data/assets.json`) that skin the code-driven enemies. Fit, clips,
+eye materials and kept procedural parts are set in `data/gameplay/enemies.json` (`model`); the runtime is
+`src/engine/babylon/monsterModels.ts`. Raw downloads live in `art/_public_backup/models/monsters/`.
+
+| File | Enemy | Source | Tris | Web size | Clips |
+|---|---|---|---|---|---|
+| `spiderthing.glb` | Crawler | "Spiderthing take 3", Rasmus82 | 68k | 1.67 MB | walk |
+| `alien_quadruped.glb` | Spitter | "alien monster", victory_ | 81k | 0.64 MB | walk |
+| `cyclops_brute.glb` | Warden | ["Cyclops Rig"](https://sketchfab.com/3d-models/cyclops-rig-e5cc86878c314f5bae6d7268bb7541d9), SuperKapoo913 | 11k | 0.95 MB (raw 5.2 MB) | idle; stride, roar, charge lean, stun slump, drop tuck and landing crouch are layered procedurally on its named skeleton (`WardenView.poseModel`) |
+
+Runtime presence (all models): lower roughness plus a thin clear coat (wet look), a faint blood-red glow (the albedo
+reused as emissive), glowing eyes (`eyes` material names) and the enemy's tell/flash colour on top. Single-clip
+models also crouch/rear in a windup, stretch into a lunge and breathe (generic, from the core state).

@@ -1,14 +1,14 @@
-import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode, Vector3 } from "@babylonjs/core";
+import { Color3, Constants, DynamicTexture, GlowLayer, Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode, Vector3 } from "@babylonjs/core";
 import type { Crawler, Enemy, Spitter, Warden } from "../../core/entities/enemies";
 import type { GameWorld } from "../../core/world";
 import { burst } from "./fx";
-import { attachMonsterModel } from "./monsterModels";
+import { attachMonsterModel, type MonsterModel } from "./monsterModels";
 import { setTarget, type DamageFn } from "./convert";
 import { lerp } from "../../core/math";
 import { GAMEPLAY } from "../../data/gameplay";
 
 // Visual-only tuning that mirrors gameplay data (weak spot multipliers come from enemies.json)
-const CR = GAMEPLAY.enemies.crawler, SP = GAMEPLAY.enemies.spitter;
+const CR = GAMEPLAY.enemies.crawler, SP = GAMEPLAY.enemies.spitter, WD = GAMEPLAY.enemies.warden;
 
 /** Per-instance material (its colours may be animated). */
 function mat(scene: Scene, diffuse: string, emissive = "#000000"): StandardMaterial {
@@ -381,6 +381,47 @@ export class SpitterView extends EnemyView {
 
 // ───────────────────────── WARDEN ─────────────────────────
 
+const X = new Vector3(1, 0, 0), Y = new Vector3(0, 1, 0), Z = new Vector3(0, 0, 1);
+
+/**
+ * Energy-shield texture, drawn for additive blending (black = see-through): a faint violet haze, hex cell edges and
+ * a glowing rim. Per scene.
+ */
+const shieldTex = new Map<number, DynamicTexture>();
+function shieldTexture(scene: Scene): DynamicTexture {
+  let t = shieldTex.get(scene.uid as unknown as number);
+  if (t && t.getScene()) return t;
+  const N = 256;
+  t = new DynamicTexture("warden-shield", { width: N, height: N }, scene, true);
+  const c = t.getContext() as unknown as CanvasRenderingContext2D;
+  c.fillStyle = "rgb(14,6,34)";
+  c.fillRect(0, 0, N, N);
+  const r = 22, h = r * Math.sqrt(3);
+  c.strokeStyle = "rgb(70,40,150)";
+  c.lineWidth = 2;
+  for (let row = -1; row * h * 0.5 < N + h; row++) {
+    for (let col = -1; col * r * 3 < N + r * 3; col++) {
+      const cx = col * r * 3 + (row % 2 ? r * 1.5 : 0), cy = row * h * 0.5;
+      c.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        if (i) c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        else c.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      }
+      c.stroke();
+    }
+  }
+  // Glowing rim on all four edges
+  for (let k = 0; k < 14; k++) {
+    const f = (1 - k / 14) ** 2;
+    c.strokeStyle = `rgb(${Math.round(70 + 110 * f)},${Math.round(40 + 100 * f)},${Math.round(150 + 105 * f)})`;
+    c.strokeRect(k, k, N - 2 * k, N - 2 * k);
+  }
+  t.update();
+  shieldTex.set(scene.uid as unknown as number, t);
+  return t;
+}
+
 export class WardenView extends EnemyView {
   declare readonly core: Warden;
   private shield: Mesh;
@@ -395,6 +436,8 @@ export class WardenView extends EnemyView {
   private sparkT = 0;
   private lastStep = 0;
   private thudDone = false;
+  private land = 0;
+  private headBone?: TransformNode;
 
   constructor(scene: Scene, core: Warden, root: Mesh, damage: DamageFn) {
     super(scene, core, root, mat(scene, "#3b2a4f", "#12061f"), damage);
@@ -454,20 +497,27 @@ export class WardenView extends EnemyView {
       fist.position.y = -0.85;
       this.arms.push({ root: sh, elbow, side });
     }
-    // Shield (absorbs fire; toggled by the core's "shield" event)
-    const sm = this.own(mat(s, "#000000", "#5a2cff"));
-    sm.alpha = 0.55;
+    // Shield (absorbs fire; toggled by the core's "shield" event): a hex-patterned energy field with a bright rim, so
+    // it reads as a shield and the brute stays visible behind it
+    const sm = this.own(mat(s, "#000000", "#000000")); // colour comes from the texture
+    sm.emissiveTexture = shieldTexture(s);
+    sm.disableLighting = true;
+    sm.alpha = 0.99; // enables blending; additive, so only the lit pattern shows
+    sm.alphaMode = Constants.ALPHA_ADD;
     this.shield = MeshBuilder.CreateBox("shield", { width: 2.8, height: 3.0, depth: 0.2 }, s);
     this.shield.material = sm;
     this.shield.parent = this.root;
     this.shield.position.set(0, 0.1, 1.15);
     this.shield.isPickable = true;
     setTarget(this.shield, { kind: "shield", id: core.id, mul: 1 }, damage);
+    // The glow layer ignores the opacity texture (the whole box would bloom white); the shield is bright enough alone
+    for (const l of s.effectLayers) if (l instanceof GlowLayer) l.addExcludedMesh(this.shield);
+    attachMonsterModel(this, WD.model);
   }
 
   setShield(up: boolean): void { this.shield.setEnabled(up); }
   shieldBurst(at: Vector3): void { burst(this.scene, at, "#5a2cff", 0.35, 0.12); }
-  landed(at: Vector3): void { burst(this.scene, at, "#8a5cff", 3, 0.4); this.flinch = 1; }
+  landed(at: Vector3): void { burst(this.scene, at, "#8a5cff", 3, 0.4); this.flinch = 1; this.land = 1; }
   stunned(at: Vector3): void { burst(this.scene, at, "#ffe066", 2, 0.3); }
 
   protected animate(dt: number): void {
@@ -502,14 +552,50 @@ export class WardenView extends EnemyView {
     this.head.rotation.x = -0.35 * this.rearUp + 0.25 * this.lean + 0.45 * this.slump;
     this.head.rotation.z = Math.sin(this.time * 3) * 0.35 * this.slump;
     this.head.rotation.y = Math.sin(this.time * 0.7) * 0.12 * (1 - this.slump);
+    this.land = Math.max(0, this.land - dt * 2.2);
     if (this.slump > 0.5) {
       this.sparkT -= dt;
       if (this.sparkT <= 0) {
         this.sparkT = 0.18;
-        const p = this.head.getAbsolutePosition().add(new Vector3((Math.random() - 0.5) * 1.2, 0.5 + Math.random() * 0.4, (Math.random() - 0.5) * 1.2));
+        const p = (this.headBone ?? this.head).getAbsolutePosition().add(new Vector3((Math.random() - 0.5) * 1.2, 0.5 + Math.random() * 0.4, (Math.random() - 0.5) * 1.2));
         burst(this.scene, p, "#ffe066", 0.25, 0.18);
       }
     }
+  }
+
+  /**
+   * Skinned model (one idle clip): stride, rear-up roar, charge lean, stun slump, drop tuck and ground-pound crouch
+   * are layered on the skeleton procedurally, mirroring the procedural rig above. Angles about the enemy's own axes
+   * (x right, y up, z forward); a positive pitch tips a bone's tip forward/down.
+   */
+  poseModel(m: MonsterModel, _dt: number, speed: number): void {
+    this.headBone ??= m.bone("Head");
+    const st = this.core.state, falling = st === "drop";
+    const moving = falling ? 0 : Math.min(1, speed / 2.5);
+    const g = this.gait, sg = Math.sin(g), cg = Math.cos(g);
+    const land = Math.sin(Math.min(1, this.land) * Math.PI * 0.5); // eases out of the landing crouch
+    for (const [side, sfx] of [[-1, "L"], [1, "R"]] as const) {
+      // Stride: thighs swing opposite, the forward-moving leg's knee lifts; drop tucks the legs; landing crouches
+      m.turn(m.bone(`Thigh.${sfx}`), X, -sg * side * 0.42 * moving - 0.25 * this.lean - (falling ? 0.55 : 0) - 0.45 * land);
+      m.turn(m.bone(`Shin.${sfx}`), X, Math.max(0, cg * side) * 0.75 * moving + 0.3 * this.slump + (falling ? 0.9 : 0) + 0.8 * land);
+      m.turn(m.bone(`Foot.${sfx}`), X, -0.35 * land);
+      // Arms counter-swing; raised wide in the roar, swept back in the charge, dangling when stunned, up while falling
+      const up = m.bone(`Upperarm.${sfx}`), fore = m.bone(`Forearm.${sfx}`);
+      m.turn(up, X, sg * side * 0.3 * moving - 1.4 * this.rearUp + 0.7 * this.lean + 0.25 * this.slump - (falling ? 1.1 : 0));
+      m.turn(up, Z, side * (0.45 * this.rearUp + (falling ? 0.5 : 0) + 0.15 * land));
+      m.turn(fore, X, -0.7 * this.rearUp - 0.35 * this.lean + 0.2 * this.slump);
+    }
+    const breathe = Math.sin(this.time * 1.8);
+    m.turn(m.bone("Spine"), X, -0.3 * this.rearUp + 0.5 * this.lean + 0.4 * this.slump - 0.18 * this.flinch + 0.25 * land + breathe * 0.025);
+    m.turn(m.bone("Spine"), Y, sg * 0.1 * moving);
+    m.turn(m.bone("Torso"), X, -0.2 * this.rearUp + 0.3 * this.lean + 0.25 * this.slump);
+    m.turn(m.bone("Torso"), Z, Math.sin(this.time * 6) * 0.06 * this.slump + sg * 0.05 * moving);
+    m.turn(this.headBone, X, -0.35 * this.rearUp + 0.1 * this.lean + 0.45 * this.slump);
+    m.turn(this.headBone, Z, Math.sin(this.time * 3) * 0.3 * this.slump);
+    m.turn(this.headBone, Y, Math.sin(this.time * 0.7) * 0.18 * (1 - this.slump));
+    // Jaw: gapes in the roar and the charge, slack when stunned, a slow pant otherwise
+    m.turn(m.bone("Jaw"), X, 0.55 * this.rearUp + 0.3 * this.lean + 0.25 * this.slump + (0.5 + 0.5 * breathe) * 0.06);
+    m.holder.position.y -= (1 - Math.abs(sg)) * 0.1 * moving + 0.22 * land + 0.12 * this.slump;
   }
 
   protected deathPose(k: number, startY: number): void {
