@@ -33,18 +33,18 @@ Three polish agents were running when this was written. Their work is on disk bu
 ## 2. Next polish round (from player feedback)
 Run as parallel agents, each with separate file ownership.
 
-### A. Mature gun and combat audio (Freesound, free)
+### A. ~~Mature gun and combat audio~~ DONE 2026-11-19 (owner to judge the mix). Open: player footsteps, ambience, alarm, stair-shaft reverb.
 - `FREESOUND_API_KEY` is set in `.env.local` (git-ignored; verified working). Use **CC0** first; **CC BY** only if clearly better, and add it to `data/assets.json` and the credits.
 - Layered gunshots: crack, body thump and tail, with the tail varying by space (narrow lane vs open plaza). Mechanical reload sounds (mag out/in, bolt), shells on stone, distant echo.
 - Impacts on flesh and stone, a heavier kill-confirm, monster vocals (growls, screams, death cries), Warden footsteps and roar.
 - Pipeline: search → download previews (HQ ogg/mp3) → trim and normalise → AAC in `public/audio/` → update `public/audio/manifest.json`. Audio.ts already plays files with fallback to the synth.
 
-### B. Mature kill and death presentation (feedback: "a bit childish")
+### B. ~~Mature kill and death presentation~~ DONE 2026-11-19 (`Corpses.ts`). Open: roof corpses dip through the slab while sinking.
 - Remove the purple death "puff". Monsters stagger, then **collapse with momentum** in the shot direction (ragdoll-like), twitch, and **alien ichor** pools under them. Corpses stay about 5–10 s, then sink and fade.
 - Trishul knockback on kill; headshot/weak-spot kills show a distinct reaction; subtle hit-stop/camera punch on kills.
 - Hit reactions depend on where the monster is hit.
 
-### C. Monster polish
+### C. ~~Monster polish~~ DONE 2026-11-19 (Warden = Cyclops Rig brute). Open: death clips, crawler eye weak spot on the GLB, maybe a full-animation spitter (+3 MB).
 - Find better rigged creatures on Sketchfab (CC0/CC BY; reject ripped franchise models). Priority: a **rigged brute for the Warden** (still procedural).
 - Animation sets: idle, walk, run, attack, hit and death where available; blended procedural motion otherwise.
 - Presence: glowing eyes, breathing, positional footsteps and growls; wet organic materials with a subtle red alien emissive.
@@ -63,7 +63,6 @@ Run as parallel agents, each with separate file ownership.
 - **JS bundle is about 11 MB** (all of Babylon imported). Switch to tree-shakeable deep imports (`@babylonjs/core/...`) or chunking to shrink it.
 - Gallery/minaret window openings are sealed niches in the Charminar model (would need hand modelling). This could be combined with D.
 - Replace the remaining runtime-drawn sprites in `fx.ts` / `Fleet.ts` with the exported PNGs (copies exist in `public/textures/generated/`).
-- Warden is visually hidden behind its shield from the front; consider a patterned/opaque shield.
 - Before any leaderboards: the core is already deterministic (fixed 60 Hz, seeded RNG, `world.stateHash()`), so add input recording and server-side replay verification.
 - Mobile touch controls (later). Steam build via an Electron/Tauri wrapper (later).
 - Level 2 (suggested: Mumbai CST station + a local train) once Level 1 is polished.
