@@ -3,6 +3,7 @@ import type { BodyId } from "../ports";
 import type { CrawlerData, EnemyType, SpitterData, WardenData } from "../../data/schemas";
 import type { CoreContext } from "../context";
 import type { HitInfo } from "../events";
+import type { NavGrid } from "../nav";
 
 /** Optional source of a hit (only feeds presentation events; never changes damage or AI). */
 export interface DamageSource { dir?: Vec3; weapon?: number; mul?: number }
@@ -13,6 +14,8 @@ export interface EnemyContext extends CoreContext {
   spawnGlob(from: Vec3, dir: Vec3): void;
   onEnemyKilled(e: Enemy): void;
   nextId(): number;
+  /** Ground-floor navigation grid (null when the physics adapter can't provide obstacles). */
+  nav(): NavGrid | null;
 }
 
 /** Attack telegraph shown by presentation (glow colour). */
@@ -50,7 +53,7 @@ export abstract class Enemy {
     this.halfHeight = stats.halfHeight;
     this.sightRange = stats.sightRange;
     this.pos = new Vec3(at.x, at.y + stats.halfHeight, at.z); // at.y = floor height (roof spawns)
-    this.body = ctx.physics.createBody(new Vec3(stats.radius, stats.halfHeight, stats.radius), this.pos, "enemy-root");
+    this.body = ctx.physics.createBody(new Vec3(stats.radius, stats.halfHeight, stats.radius), this.pos, `${type}-root`);
   }
 
   takeDamage(amount: number, point: Vec3, src?: DamageSource): void {
@@ -161,6 +164,70 @@ export abstract class Enemy {
 
   protected idle(_dt: number): void {}
   protected abstract think(dt: number): void;
+
+  // ---- Local steering (no navmesh: the level is lanes and a plaza, so feelers around low cover are enough) ----
+  private steerDir: Vec3 | null = null;
+  private steerT = 0;
+  private steerSide = 1;
+
+  /**
+   * Direction to walk to head along `want` without pressing into obstacles: straight when the way ahead is clear at
+   * knee height across the body's width; otherwise the nearest clear heading (keeping to one side for consistency),
+   * re-evaluated a few times a second. Falls back to `want` when boxed in (the caller's stalemate logic takes over).
+   */
+  protected steer(want: Vec3, dt: number, look = 2.5): Vec3 {
+    this.steerT -= dt;
+    if (this.steerT > 0 && this.steerDir) return this.steerDir;
+    this.steerT = 0.2;
+    if (this.clearAhead(want, look)) { this.steerDir = want; return want; }
+    // detours only need a short clear run (a long one sideways would hit the far wall of a narrow lane)
+    for (const deg of [25, 50, 75, 100]) {
+      for (const side of [this.steerSide, -this.steerSide]) {
+        const d = rotateY(want, (side * deg * Math.PI) / 180);
+        if (this.clearAhead(d, 1.0)) {
+          this.steerSide = side;
+          this.steerDir = d;
+          this.steerT = 0.45; // commit briefly, so it rounds the obstacle instead of dithering
+          return d;
+        }
+      }
+    }
+    this.steerDir = want;
+    return want;
+  }
+
+  private path: Vec3[] = [];
+  private repathT = 0;
+
+  /**
+   * Direction toward the player around static obstacles: straight when there's room all the way, else along an A*
+   * path over the navigation grid (re-planned twice a second). At the end of a path that couldn't reach the player
+   * (a doorway too narrow, the player upstairs) it presses on toward them and the caller's stalemate logic decides.
+   * Without a grid, falls back to local steering.
+   */
+  protected navDir(toP: Vec3, dt: number): Vec3 {
+    const nav = this.ctx.nav();
+    if (!nav) return this.steer(toP, dt);
+    const p = this.ctx.player.pos, r = this.radius;
+    if (nav.lineClear(this.pos.x, this.pos.z, p.x, p.z, r)) { this.path = []; return toP; }
+    this.repathT -= dt;
+    if (this.repathT <= 0) { this.repathT = 0.5; this.path = nav.findPath(this.pos, p, r) ?? []; }
+    while (this.path.length && Math.hypot(this.path[0].x - this.pos.x, this.path[0].z - this.pos.z) < 0.5) this.path.shift();
+    if (!this.path.length) return toP;
+    const d = new Vec3(this.path[0].x - this.pos.x, 0, this.path[0].z - this.pos.z);
+    return d.lengthSquared() > 1e-6 ? d.normalize() : toP;
+  }
+
+  private clearAhead(dir: Vec3, look: number): boolean {
+    const y = this.pos.y - this.halfHeight + 0.45; // knee height: low cover blocks the body but not the eyes
+    const len = this.radius + look;
+    for (const k of [0, 1, -1]) {
+      const ox = dir.z * this.radius * 0.95 * k, oz = -dir.x * this.radius * 0.95 * k;
+      const a = new Vec3(this.pos.x + ox, y, this.pos.z + oz);
+      if (!this.ctx.physics.lineOfSight(a, a.add(dir.scale(len)))) return false;
+    }
+    return true;
+  }
 }
 
 /**
@@ -320,6 +387,9 @@ export class Warden extends Enemy {
   t = 0;
   /** Seconds spent pressed against geometry while unable to reach the player (anti-stalemate). */
   private blockedT = 0;
+  /** Net-progress check: where it was at the start of the current window, and the window's age (s). */
+  private progFrom = Vec3.zero();
+  private progT = 0;
   shieldUp = true;
   private chargeCd: number;
   private chargeDir = Vec3.zero();
@@ -362,14 +432,22 @@ export class Warden extends Enemy {
       case "stalk":
         this.face(toP, dt, D.turnRate); // slow turner: you can flank it
         const reach = this.canReach(D.contact.range);
-        const frac = this.move(toP, D.stalkSpeed, dt);
+        const frac = this.move(this.navDir(toP, dt), D.stalkSpeed, dt);
         this.chargeCd -= dt;
         if (reach) ctx.player.hurt(D.contact.damagePerSecond * dt, this.pos, D.contact.knockback);
         // Anti-stalemate: too big for a doorway (the Charminar leg) or wedged at a corner, it would stand there with
         // its shield up, too close to charge and unable to touch the player. Back off into the open instead, which
         // lets the player out and sets up a charge (into the wall, so stunned).
         this.blockedT = frac < 0.3 && !reach ? this.blockedT + dt : Math.max(0, this.blockedT - dt * 2);
-        if (this.blockedT > D.unstick.after) {
+        // ...or shuffling along a wall without getting anywhere
+        this.progT += dt;
+        let going = true;
+        if (this.progT >= 3) {
+          going = reach || Math.hypot(this.pos.x - this.progFrom.x, this.pos.z - this.progFrom.z) > 2;
+          this.progFrom.copyFrom(this.pos); this.progT = 0;
+        }
+        if (this.blockedT > D.unstick.after || !going) {
+          this.progFrom.copyFrom(this.pos); this.progT = 0;
           this.blockedT = 0;
           this.state = "withdraw";
           this.t = D.unstick.maxTime;
@@ -441,7 +519,7 @@ export class Warden extends Enemy {
         let frac = this.move(away, D.stalkSpeed, dt);
         if (frac < 0.3) frac = this.move(rotateY(away, 1.0), D.stalkSpeed, dt);
         if (frac < 0.3) this.move(rotateY(away, -1.0), D.stalkSpeed, dt);
-        if (this.t <= 0 || dist >= D.unstick.distance) {
+        if (this.t <= 0 || (dist >= D.unstick.distance && this.t < D.unstick.maxTime - 1)) {
           this.state = "stalk";
           this.chargeCd = Math.min(this.chargeCd, D.unstick.chargeCooldown);
         }

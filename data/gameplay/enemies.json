@@ -20,7 +20,7 @@
     "model": { "file": "alien_quadruped.glb", "length": 4.4, "axis": "x", "yaw": -1.5707963267948966, "anim": "ArmatureAction", "animSpeedRef": 2.2, "keep": ["sac"] }
   },
   "warden": {
-    "hp": 340, "halfHeight": 1.5, "radius": 1.1, "sightRange": 60,
+    "hp": 340, "halfHeight": 1.27, "radius": 0.6, "sightRange": 60,
     "dropHeight": 22, "dropSpeed": 25,
     "land": { "radius": 5, "damage": 15, "knockback": 12 },
     "stalkSpeed": 2.6, "turnRate": 1.6,
@@ -33,7 +33,7 @@
     "stun": { "duration": 3.5, "damageMultiplier": 2 },
     "unstick": { "after": 1.5, "distance": 9, "maxTime": 4, "chargeCooldown": 0.6 },
     "model": {
-      "file": "cyclops_brute.glb", "length": 3.3, "axis": "y", "yaw": 0, "anim": "Idle", "animSpeedRef": 2.6,
+      "file": "cyclops_brute.glb", "length": 2.8, "axis": "y", "yaw": 0, "anim": "Idle", "animSpeedRef": 2.6,
       "keepInPlace": ["shield"], "clips": { "idle": "Idle" }, "eyes": ["Cyclops_Eye_Naterial"], "eyeColor": "#ff3018"
     }
   }

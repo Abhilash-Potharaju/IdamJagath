@@ -1,3 +1,4 @@
+import { BIG_MONSTER_GROUP } from "../engine/babylon/BabylonPhysics";
 import { Color3, type Material, PBRMaterial, Mesh, MeshBuilder, PointLight, Scene, StandardMaterial, Texture, Vector3, VertexBuffer, VertexData } from "@babylonjs/core";
 import { markWorld } from "./types";
 import { makeSolid, place } from "./Props";
@@ -223,6 +224,15 @@ export class Level {
       torch.intensity = 1.1;
       torch.range = 7;
     }
+    // Big monsters only (the Warden): an invisible gate across the doorway. The player, bullets, line of sight and the
+    // small monsters ignore it (collision groups), so the Warden can't squeeze in after the player.
+    const gate = MeshBuilder.CreateBox("big-monster-gate", { width: 2.4, height: 3, depth: 0.4 }, this.scene);
+    gate.position.set(6.97, 1.5, 75.2);
+    gate.isVisible = false;
+    gate.isPickable = false;
+    gate.checkCollisions = true;
+    gate.collisionGroup = BIG_MONSTER_GROUP;
+    gate.metadata = { ...(gate.metadata ?? {}), navBlocker: true };
   }
 
   async decorate(): Promise<void> {

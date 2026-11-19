@@ -568,10 +568,11 @@ export class WardenView extends EnemyView {
     sm.disableLighting = true;
     sm.alpha = 0.99; // enables blending; additive, so only the lit pattern shows
     sm.alphaMode = Constants.ALPHA_ADD;
-    this.shield = MeshBuilder.CreateBox("shield", { width: 2.8, height: 3.0, depth: 0.2 }, s);
+    const k = core.halfHeight / 1.5; // the shield was sized for a 3 m Warden; it scales with the body
+    this.shield = MeshBuilder.CreateBox("shield", { width: 2.8 * k, height: 3.0 * k, depth: 0.2 }, s);
     this.shield.material = sm;
     this.shield.parent = this.root;
-    this.shield.position.set(0, 0.1, 1.15);
+    this.shield.position.set(0, 0.1 * k, 1.15 * k);
     this.shield.isPickable = true;
     setTarget(this.shield, { kind: "shield", id: core.id, mul: 1 }, damage);
     // The glow layer ignores the opacity texture (the whole box would bloom white); the shield is bright enough alone

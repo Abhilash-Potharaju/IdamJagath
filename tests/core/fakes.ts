@@ -1,5 +1,5 @@
 import { Vec3 } from "../../src/core/math";
-import type { BodyId, HitTarget, InputSnapshot, IPhysics, LevelAnchors, RayHit } from "../../src/core/ports";
+import type { BodyId, HitTarget, InputSnapshot, IPhysics, LevelAnchors, NavObstacle, RayHit } from "../../src/core/ports";
 import { NO_INPUT } from "../../src/core/ports";
 import { GameWorld, type WorldOptions } from "../../src/core/world";
 import { GAMEPLAY } from "../../src/data/gameplay";
@@ -62,6 +62,12 @@ export class FakePhysics implements IPhysics {
     if (len === 0) return true;
     d.normalize();
     return !this.walls.some((w) => { const t = rayBox(a, d, w); return t !== null && t < len - 0.3; });
+  }
+
+  navObstacles(): NavObstacle[] {
+    return this.walls.filter((w) => w.max.y > 0.3 && w.min.y < 2).map((w) => ({
+      cx: (w.min.x + w.max.x) / 2, cz: (w.min.z + w.max.z) / 2, hx: (w.max.x - w.min.x) / 2, hz: (w.max.z - w.min.z) / 2, yaw: 0,
+    }));
   }
 
   private hitsWall(p: Vec3, h: Vec3): boolean {

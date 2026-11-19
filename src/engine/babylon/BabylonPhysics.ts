@@ -1,8 +1,12 @@
-import { type AbstractMesh, Mesh, MeshBuilder, Ray, type Scene, Vector3 } from "@babylonjs/core";
+import { type AbstractMesh, Mesh, MeshBuilder, Quaternion, Ray, type Scene, Vector3 } from "@babylonjs/core";
 import type { Vec3 } from "../../core/math";
-import type { BodyId, HitTarget, IPhysics, RayHit } from "../../core/ports";
+import type { BodyId, HitTarget, IPhysics, NavObstacle, RayHit } from "../../core/ports";
 import { isWorld } from "../../game/types";
 import { fromV3, toV3 } from "./convert";
+
+/** Collision group of gates only big monsters collide with (a doorway the Warden must not squeeze through). */
+export const BIG_MONSTER_GROUP = 4;
+const BIG_BODIES = new Set(["warden-root"]);
 
 /**
  * IPhysics on Babylon's built-in collision system: each body is an invisible mesh with a collision ellipsoid moved
@@ -23,6 +27,7 @@ export class BabylonPhysics implements IPhysics {
     m.isVisible = false;
     m.isPickable = false;
     m.ellipsoid = toV3(halfExtents);
+    m.collisionMask = BIG_BODIES.has(name) ? -1 : ~BIG_MONSTER_GROUP;
     m.position.copyFrom(toV3(pos));
     const id = ++this.seq;
     this.bodies.set(id, m);
@@ -93,6 +98,36 @@ export class BabylonPhysics implements IPhysics {
       }
       if (!pushed) break;
     }
+  }
+
+  /**
+   * Solid geometry between ankle and head height on the ground floor. Boxes (24 vertices, yaw-only rotation: gray-box
+   * blocks, prop colliders, pocket fillers) are reported exactly; anything else (minarets, the stair shaft) by its
+   * world AABB, which is conservative and only covers places a monster can't go anyway.
+   */
+  navObstacles(): NavObstacle[] {
+    const out: NavObstacle[] = [];
+    const sc = new Vector3(), q = new Quaternion(), tr = new Vector3();
+    for (const mesh of this.scene.meshes) {
+      if (!mesh.checkCollisions || !mesh.isEnabled() || mesh.isDisposed() || !(isWorld(mesh) || mesh.metadata?.navBlocker)) continue;
+      mesh.computeWorldMatrix(true);
+      const bb = mesh.getBoundingInfo().boundingBox;
+      if (bb.maximumWorld.y < 0.3 || bb.minimumWorld.y > 2.0) continue; // floors, curbs, the roof
+      if (bb.maximumWorld.x - bb.minimumWorld.x > 150 || bb.maximumWorld.z - bb.minimumWorld.z > 150) continue; // terrain
+      if (mesh.getTotalVertices() <= 24) {
+        mesh.getWorldMatrix().decompose(sc, q, tr);
+        const e = q.toEulerAngles();
+        if (Math.abs(e.x) < 1e-3 && Math.abs(e.z) < 1e-3) {
+          const c = bb.center, ext = bb.extendSize; // local
+          const lc = Vector3.TransformCoordinates(c, mesh.getWorldMatrix());
+          out.push({ cx: lc.x, cz: lc.z, hx: Math.abs(ext.x * sc.x), hz: Math.abs(ext.z * sc.z), yaw: e.y });
+          continue;
+        }
+      }
+      const mn = bb.minimumWorld, mx = bb.maximumWorld;
+      out.push({ cx: (mn.x + mx.x) / 2, cz: (mn.z + mx.z) / 2, hx: (mx.x - mn.x) / 2, hz: (mx.z - mn.z) / 2, yaw: 0 });
+    }
+    return out;
   }
 
   raycast(origin: Vec3, dir: Vec3, range: number): RayHit | null {

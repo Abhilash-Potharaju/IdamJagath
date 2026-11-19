@@ -5,6 +5,7 @@ import { Mission } from "./mission";
 import { Player } from "./entities/player";
 import { Arsenal, type DamageResult } from "./entities/weapons";
 import { Crawler, Enemy, Spitter, Warden, type EnemyContext } from "./entities/enemies";
+import { NavGrid } from "./nav";
 import type { HitTarget, InputSnapshot, IPhysics, LevelAnchors } from "./ports";
 import type { EnemiesFile, MissionData, PlayerData, Spawn, WeaponData } from "../data/schemas";
 
@@ -106,6 +107,15 @@ export class GameWorld implements EnemyContext {
   }
 
   nextId(): number { return ++this.idSeq; }
+
+  private navGrid: NavGrid | null = null;
+  private navAt = -Infinity;
+  /** Built on first use (the Warden) and refreshed every few seconds (doors open, e.g. the cage). */
+  nav(): NavGrid | null {
+    if (!this.physics.navObstacles) return null;
+    if (!this.navGrid || this.time - this.navAt > 5) { this.navGrid = NavGrid.build(this.physics.navObstacles()); this.navAt = this.time; }
+    return this.navGrid;
+  }
 
   spawnGlob(from: Vec3, dir: Vec3): void {
     const G = this.data.enemies.spitter.glob;

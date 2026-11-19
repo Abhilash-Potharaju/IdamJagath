@@ -288,12 +288,26 @@ describe("enemies", () => {
     expect(w.shieldUp).toBe(true);
   });
 
+  it("Warden steers around low cover between it and the player instead of pressing into it", () => {
+    const { world, physics } = makeWorld({ explore: true });
+    run(world, 0.3);
+    world.player.teleport(0, 0.9, -12);
+    physics.walls.push({ min: new Vec3(-2, 0, -3.5), max: new Vec3(2, 1, -2.5) }); // like the plaza's cover-6
+    const w = world.spawn({ type: "warden", at: [0, 0] }, true) as Warden;
+    w.pos.y = GAMEPLAY.enemies.warden.halfHeight;
+    w.state = "stalk";
+    for (let i = 0; i < 60 * 6; i++) { Object.assign(w, { chargeCd: 99 }); world.step(DT, input()); world.player.teleport(0, 0.9, -12); }
+    expect(w.pos.z).toBeLessThan(-4); // got past the cover (its far edge is at z -3.5)
+  });
+
   it("Warden backs off instead of standing shield-up in a doorway it can't fit through", () => {
     const { world, physics } = makeWorld({ explore: true });
     run(world, 0.3);
     world.player.teleport(0, 0.9, 4); // just past the "doorway", closer than the charge's minimum range
     // a 1.2 m doorway: the player can see (and shoot) through it, the Warden (radius 1.1) can't fit
-    physics.walls.push({ min: new Vec3(-6, 0, 2), max: new Vec3(-0.6, 4, 2.6) }, { min: new Vec3(0.6, 0, 2), max: new Vec3(6, 4, 2.6) });
+    physics.walls.push({ min: new Vec3(-6, 0, 2), max: new Vec3(-0.6, 4, 2.6) }, { min: new Vec3(0.6, 0, 2), max: new Vec3(6, 4, 2.6) },
+      // the rest of the room (like a Charminar leg): no way round
+      { min: new Vec3(-6, 0, 2), max: new Vec3(-5.4, 4, 9) }, { min: new Vec3(5.4, 0, 2), max: new Vec3(6, 4, 9) }, { min: new Vec3(-6, 0, 8.4), max: new Vec3(6, 4, 9) });
     const w = world.spawn({ type: "warden", at: [0, 0] }, true) as Warden;
     w.pos.y = GAMEPLAY.enemies.warden.halfHeight;
     w.state = "stalk";

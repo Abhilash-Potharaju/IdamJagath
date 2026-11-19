@@ -39,7 +39,15 @@ export interface IPhysics {
   raycast(origin: Vec3, dir: Vec3, range: number): RayHit | null;
   /** True when no solid world geometry blocks the segment a→b. */
   lineOfSight(a: Vec3, b: Vec3): boolean;
+  /**
+   * Solid obstacles at walking height on the ground floor, as (possibly rotated) boxes, for the monsters' navigation
+   * grid. Optional: without it monsters fall back to local steering.
+   */
+  navObstacles?(): NavObstacle[];
 }
+
+/** A solid box footprint: centre, half extents along its own axes, and yaw (rad, Babylon convention). */
+export interface NavObstacle { cx: number; cz: number; hx: number; hz: number; yaw: number }
 
 /**
  * One simulation step's input, as plain actions (the adapter maps devices → actions).
