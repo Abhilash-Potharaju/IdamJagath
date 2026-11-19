@@ -136,12 +136,12 @@ export class GameWorld implements EnemyContext {
   }
 
   /** Apply weapon damage to whatever a ray hit. */
-  damageTarget(target: HitTarget, amount: number, point: Vec3): DamageResult {
+  damageTarget(target: HitTarget, amount: number, point: Vec3, src?: { dir: Vec3; weapon: number }): DamageResult {
     switch (target.kind) {
       case "enemy": {
         const e = this.enemies.find((x) => x.id === target.id);
         if (!e || !e.alive) return { enemy: false, killed: false };
-        e.takeDamage(amount, point);
+        e.takeDamage(amount, point, { dir: src?.dir, weapon: src?.weapon, mul: target.mul });
         return { enemy: true, killed: !e.alive };
       }
       case "shield": {
