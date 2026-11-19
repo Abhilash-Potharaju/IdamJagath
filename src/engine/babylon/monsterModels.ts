@@ -213,13 +213,15 @@ export function attachMonsterModel(view: SkinnableEnemy, spec: MonsterModelSpec,
       speed < 0.25 && model.groups.idle ? "idle" : speed > spec.animSpeedRef * 1.8 && model.groups.run ? "run" : "walk";
 
     const last = e.root.position.clone();
-    let dying = 0, speed = 0, crouch = 0, strike = 0, breath = Math.random() * 6;
+    let speed = 0, crouch = 0, strike = 0, breath = Math.random() * 6;
     const obs = scene.onBeforeRenderObservable.add(() => {
       if (e.root.isDisposed()) {
         scene.onBeforeRenderObservable.remove(obs);
         scene.onAfterRenderObservable.remove(undoTurns);
         stopClearance();
         for (const g of inst.animationGroups) g.dispose();
+        for (const sk of inst.skeletons) sk.dispose(); // per-instance clones: free them with the corpse
+        for (const m of mats.keys()) m.dispose(false, false); // cloned materials (textures stay shared)
         return;
       }
       const dt = Math.max(scene.getEngine().getDeltaTime() / 1000, 1e-3);
@@ -266,10 +268,14 @@ export function attachMonsterModel(view: SkinnableEnemy, spec: MonsterModelSpec,
         playing.clear();
       }
       if (!e.alive) {
-        // Death: freeze the animation and topple over (the enemy disposes its root after its own death timer)
-        group?.pause();
-        dying += dt;
-        holder.rotation.z = Math.min(1.5, dying * 4);
+        // Death (the corpse moves the whole body, see Corpses.ts): the gait thrashes on for a moment, then winds down
+        // as the limbs go limp; twitches replay a few frames; the hit-stop holds it still
+        const ds = (e as unknown as { death?: { limp: number; twitch: number; frozen: boolean } }).death;
+        const ratio = !ds || ds.frozen ? 0 : Math.max(1.4 * (1 - ds.limp) ** 2, ds.twitch * 2.2);
+        if (group) {
+          if (ratio < 0.03) group.pause();
+          else { group.speedRatio = ratio; if (!group.isPlaying) group.play(true); }
+        }
       }
     });
   }).catch((err) => console.warn(`[monster] ${spec.file} failed; keeping the procedural body`, err));

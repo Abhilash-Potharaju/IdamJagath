@@ -208,6 +208,38 @@ describe("weapons", () => {
     expect(world.arsenal.gun.ammo).toBe(GAMEPLAY.weapons[1].mag - 1);
   });
 
+  it("kill events carry the shot direction, weapon slot and weak-spot flag (presentation only, hash unchanged)", () => {
+    const { world, c } = range(3);
+    const kills: { dir: Vec3 | null; weapon: number; weak: boolean; hit: Vec3 }[] = [];
+    world.events.on("enemyKilled", (e) => kills.push(e));
+    world.step(DT, input({ weapon2Pressed: true }));
+    run(world, 0.45);
+    world.step(DT, input({ fire: true }));
+    expect(c.alive).toBe(false);
+    expect(kills.length).toBe(1);
+    const k = kills[0];
+    expect(k.weapon).toBe(1);
+    expect(k.weak).toBe(false);
+    expect(k.dir).not.toBeNull();
+    expect(k.dir!.z).toBeGreaterThan(0.9); // the crawler is straight ahead (+z)
+    expect(Math.abs(k.hit.z - c.pos.z)).toBeLessThan(1);
+    // Weak-spot hit (part multiplier > 1) is flagged; scripted damage without a source has no direction
+    const { world: w2, c: c2 } = range(6);
+    const hurt: { weak: boolean; dir: Vec3 | null; weapon: number }[] = [];
+    w2.events.on("enemyHurt", (e) => hurt.push(e));
+    w2.damageTarget({ kind: "enemy", id: c2.id, mul: 1.5 }, 5, c2.pos, { dir: new Vec3(0, 0, 1), weapon: 0 });
+    w2.damageTarget({ kind: "enemy", id: c2.id, mul: 1 }, 5, c2.pos);
+    expect(hurt.map((h) => h.weak)).toEqual([true, false]);
+    expect(hurt[1].dir).toBeNull();
+    expect(hurt[1].weapon).toBe(-1);
+    // The extra event data doesn't touch simulation state: same hash with and without a source
+    const { world: a, c: ca } = range(6), { world: b, c: cb } = range(6);
+    a.damageTarget({ kind: "enemy", id: ca.id, mul: 1 }, 50, ca.pos, { dir: new Vec3(0, 0, 1), weapon: 1 });
+    b.damageTarget({ kind: "enemy", id: cb.id, mul: 1 }, 50, cb.pos);
+    run(a, 0.5); run(b, 0.5);
+    expect(a.stateHash()).toBe(b.stateHash());
+  });
+
   it("can't fire while sprinting", () => {
     const { world, c } = range(8);
     run(world, 0.4, input({ forward: true, sprint: true }));

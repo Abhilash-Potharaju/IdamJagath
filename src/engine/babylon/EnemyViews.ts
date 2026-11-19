@@ -2,8 +2,9 @@ import { Color3, Constants, DynamicTexture, GlowLayer, Mesh, MeshBuilder, Scene,
 import type { Crawler, Enemy, Spitter, Warden } from "../../core/entities/enemies";
 import type { GameWorld } from "../../core/world";
 import { burst } from "./fx";
+import { Corpses, type DeathInfo, type DeathProfile, type DeathState } from "./Corpses";
 import { attachMonsterModel, type MonsterModel } from "./monsterModels";
-import { setTarget, type DamageFn } from "./convert";
+import { setTarget, toV3, type DamageFn } from "./convert";
 import { lerp } from "../../core/math";
 import { GAMEPLAY } from "../../data/gameplay";
 
@@ -42,7 +43,10 @@ function node(name: string, scene: Scene, parent: TransformNode, x = 0, y = 0, z
 
 /** Frame-rate independent ease toward a target. */
 const approach = (cur: number, target: number, rate: number, dt: number) => cur + (target - cur) * Math.min(1, rate * dt);
-const WHITE = new Color3(1, 1, 1);
+/** Hit flash: a dull hot glow, not a cartoon white blink. */
+const HIT_FLASH = new Color3(0.7, 0.22, 0.16);
+/** Hit-reaction springs: stiffness, damping (1/s), impulse (rad/s) per hit; heavy (Trishul) and weak-spot multipliers. */
+const REACT = { k: 170, d: 15, impulse: 2.4, heavy: 1.7, weak: 1.5 };
 const TELL: Record<string, Color3> = {
   lunge: new Color3(1, 0.45, 0),
   charge: new Color3(1, 0.1, 0.1),
@@ -66,9 +70,13 @@ export abstract class EnemyView {
   protected speed = 0;
   /** 1 right after being hit, decays to 0: drives the flinch pose. */
   protected flinch = 0;
+  /** Seconds the collapse takes (the corpse's fall phase, see Corpses.ts). */
   protected deathTime = 0.5;
+  /** Legacy (the old death puff); unused. */
   protected deathColor = "#b06cff";
   protected deathSize = 0.6;
+  /** While dying: limb state for procedural rigs and GLB animations (read by monsterModels.ts). */
+  readonly death: DeathState = { limp: 0, twitch: 0, frozen: false };
   private ownMats: StandardMaterial[] = [];
   private flashT = 0;
   private lastPos: Vector3;
@@ -77,6 +85,9 @@ export abstract class EnemyView {
   private prevYaw = 0;
   private curYaw = 0;
   private dying = false;
+  /** Hit-reaction springs on the body (x = pitch, y = yaw twist, z = roll) and their velocities. */
+  private react = new Vector3();
+  private reactV = new Vector3();
 
   constructor(scene: Scene, core: Enemy, root: Mesh, bodyMat: StandardMaterial, damage: DamageFn) {
     this.scene = scene;
@@ -108,9 +119,29 @@ export abstract class EnemyView {
     return m;
   }
 
-  onHurt(): void {
-    this.flashT = 0.06;
+  /**
+   * Hit reaction from where the shot landed: the body rocks away from the hit (more when hit high, the legs are
+   * knocked when hit low), twists when hit off-centre, and snaps back hard on a weak spot.
+   */
+  onHurt(at?: Vector3, dir?: Vector3 | null, weak = false, heavy = false): void {
+    this.flashT = 0.05;
     this.flinch = 1;
+    if (!at || this.root.isDisposed()) return;
+    this.root.computeWorldMatrix(true);
+    const inv = this.root.getWorldMatrix().clone().invert();
+    const hit = Vector3.TransformCoordinates(at, inv); // body frame: +x right, +y up, +z forward
+    const push = dir && dir.lengthSquared() > 0
+      ? Vector3.TransformNormal(dir, inv).normalize()
+      : hit.scale(-1).normalize(); // unknown direction: away from the hit point toward the body centre
+    const h = Math.max(-1, Math.min(1, hit.y / Math.max(0.2, this.core.halfHeight)));
+    const amp = REACT.impulse * this.reactionScale() * (heavy ? REACT.heavy : 1) * (weak ? REACT.weak : 1);
+    const lean = amp * (0.35 + 0.65 * h); // top moves with the push when hit high; low hits barely tilt it
+    // Babylon: +rot.x tips +Y toward +Z, +rot.z tips +Y toward -X, +rot.y turns +Z toward +X
+    this.reactV.x += lean * push.z;
+    this.reactV.z += -lean * push.x;
+    const torque = hit.x * push.z - hit.z * push.x; // off-centre hits twist the body
+    this.reactV.y += -amp * 0.9 * Math.max(-1, Math.min(1, torque));
+    if (weak) this.reactV.x += -amp * 0.6; // weak spot (head/eye/sac): snap back
   }
 
   /** Before a simulation step: put the body exactly where the core has it (so shots test the true position). */
@@ -132,46 +163,59 @@ export abstract class EnemyView {
   render(alpha: number, dt: number): void {
     if (this.dying || this.root.isDisposed()) return;
     Vector3.LerpToRef(this.prev, this.cur, alpha, this.root.position);
-    this.root.rotation.y = lerp(this.prevYaw, this.curYaw, alpha);
     this.time += dt;
+    // Hit-reaction springs (damped, slight overshoot)
+    const sdt = Math.min(dt, 0.033);
+    this.reactV.x += (-REACT.k * this.react.x - REACT.d * this.reactV.x) * sdt;
+    this.reactV.y += (-REACT.k * this.react.y - REACT.d * this.reactV.y) * sdt;
+    this.reactV.z += (-REACT.k * this.react.z - REACT.d * this.reactV.z) * sdt;
+    this.react.addInPlace(this.reactV.scale(sdt));
+    this.react.x = Math.max(-0.45, Math.min(0.45, this.react.x));
+    this.react.z = Math.max(-0.45, Math.min(0.45, this.react.z));
+    this.root.rotation.set(this.react.x, lerp(this.prevYaw, this.curYaw, alpha) + this.react.y, this.react.z);
     this.flinch = Math.max(0, this.flinch - dt * 7);
     if (this.flashT > 0) this.flashT -= dt;
     const base = TELL[this.core.tell] ?? this.restEmissive;
-    this.bodyMat.emissiveColor = this.flashT > 0 ? WHITE.clone() : base.clone();
+    this.bodyMat.emissiveColor = this.flashT > 0 ? HIT_FLASH.clone() : base.clone();
     const p = this.root.position;
     this.speed = dt > 0 ? Math.hypot(p.x - this.lastPos.x, p.z - this.lastPos.z) / dt : 0;
     this.lastPos.copyFrom(p);
     this.animate(dt);
   }
 
-  /** Death: no longer shootable; a short collapse animation plays, then the meshes are disposed. */
-  die(): void {
+  /**
+   * Death: no longer shootable. The body becomes a corpse (Corpses.ts): it staggers, collapses along the shot with
+   * momentum, twitches, bleeds an ichor pool, then sinks, fades and is disposed.
+   */
+  die(info?: DeathInfo): void {
     if (this.dying) return;
     this.dying = true;
     this.bodyMat.emissiveColor = this.restEmissive.clone();
     for (const m of this.root.getChildMeshes()) m.isPickable = false;
-    const scene = this.scene;
-    const startY = this.root.position.y;
-    let k = 0;
-    const obs = scene.onBeforeRenderObservable.add(() => {
-      k = Math.min(1, k + scene.getEngine().getDeltaTime() / 1000 / this.deathTime);
-      this.deathPose(k, startY);
-      if (k >= 1) {
-        scene.onBeforeRenderObservable.remove(obs);
-        burst(scene, this.root.getAbsolutePosition().clone(), this.deathColor, this.deathSize, 0.35);
+    this.root.rotation.x = this.root.rotation.z = 0; // drop the hit-reaction lean; the corpse takes over
+    const fallback = this.root.getAbsolutePosition();
+    const di: DeathInfo = info ?? { dir: new Vector3(0, 0, 1), hit: fallback.clone(), weak: false, heavy: false };
+    const mats = this.ownMats, emis = mats.map((m) => m.emissiveColor.clone());
+    Corpses.for(this.scene).add(this.scene, this.root, { ...this.deathProfile(), fall: this.deathTime }, di, {
+      limbs: (k, tw) => this.deathPose(k, tw),
+      dim: (k) => mats.forEach((m, i) => { m.emissiveColor = emis[i].scale(1 - 0.85 * k); }),
+      dispose: () => {
         this.root.dispose(false, false); // shared materials must survive
-        for (const m of this.ownMats) m.dispose();
-      }
-    });
+        for (const m of mats) m.dispose();
+      },
+    }, this.death);
   }
 
-  /** Default death pose: tip over sideways, sink and shrink. k goes 0 → 1. */
-  protected deathPose(k: number, startY: number): void {
-    const e = k * k;
-    this.root.rotation.z = e * 1.5;
-    this.root.position.y = startY - this.core.halfHeight * 0.55 * e;
-    this.root.scaling.setAll(1 - 0.35 * e);
+  /** How hard hits rock this body (heavier monsters move less). */
+  protected reactionScale(): number { return 1; }
+
+  /** How this body falls (see DeathProfile). */
+  protected deathProfile(): DeathProfile {
+    return { axis: "dir", tip: 1.4, heavyTip: 1.5, weakTip: 1.4, slide: 0.4, heavySlide: 1.1, spin: 0.3, stagger: 0.15, fall: this.deathTime, squash: 0.8, pool: 0.8, rigid: 0.8 };
   }
+
+  /** Limbs while dying: k = how limp (0 → 1), twitch = 0..1 pulse. The corpse moves the whole body. */
+  protected deathPose(_k: number, _twitch: number): void {}
 
   /** Pose the rig for this frame (purely visual). */
   protected abstract animate(dt: number): void;
@@ -281,16 +325,24 @@ export class CrawlerView extends EnemyView {
     this.mandibles[1].rotation.y = -(0.15 + this.open * 0.75 + Math.sin(this.time * 18 + 1) * 0.05);
   }
 
-  /** Flips onto its back, legs curling. */
-  protected deathPose(k: number, startY: number): void {
-    const e = k * k;
-    this.root.rotation.z = e * 2.9;
-    this.root.position.y = startY + Math.sin(k * Math.PI) * 0.4 - e * 0.1;
-    this.root.scaling.setAll(1 - 0.25 * e);
-    for (const L of this.legs) {
-      L.hip.rotation.z = L.side * (0.6 * k);
-      L.knee.rotation.z = L.side * (1.2 * k + Math.sin(k * 40) * 0.2 * (1 - k));
-    }
+  /** Legs give out and splay, drops on its belly; a Trishul blast flips it onto its back. */
+  protected deathProfile(): DeathProfile {
+    return { axis: "dir", tip: 0.55, heavyTip: Math.PI * 0.94, weakTip: 0.15, slide: 0.55, heavySlide: 1.7, spin: 0.6, stagger: 0.1, fall: this.deathTime, squash: 0.45, pool: 1.0, rigid: 0.35 };
+  }
+
+  /** Legs splay then curl in as it goes limp; twitches kick them. */
+  protected deathPose(k: number, tw: number): void {
+    this.legs.forEach((L, i) => {
+      const kick = tw * 0.5 * Math.sin(this.time * 31 + i * 1.9);
+      L.hip.rotation.y = L.baseYaw;
+      L.hip.rotation.z = L.side * (0.25 * k + kick * 0.5);
+      L.knee.rotation.z = L.side * (1.25 * k * k + kick);
+    });
+    this.head.rotation.x = 0.35 * k;
+    this.head.rotation.y = tw * 0.25 * Math.sin(this.time * 40);
+    this.mandibles[0].rotation.y = 0.15 + 0.5 * k;
+    this.mandibles[1].rotation.y = -(0.15 + 0.5 * k);
+    this.time += 1 / 60;
   }
 }
 
@@ -373,9 +425,22 @@ export class SpitterView extends EnemyView {
     });
   }
 
-  protected deathPose(k: number, startY: number): void {
-    super.deathPose(k, startY);
-    this.segs.forEach((n, i) => { n.rotation.x = k * (0.3 + i * 0.12); });
+  protected reactionScale(): number { return 0.6; }
+
+  /** Long body: rolls onto the flank the shot pushes. */
+  protected deathProfile(): DeathProfile {
+    return { axis: "side", tip: 1.3, heavyTip: 1.5, weakTip: 1.4, slide: 0.35, heavySlide: 1.0, spin: 0.25, stagger: 0.18, fall: this.deathTime * 1.2, squash: 0.8, pool: 1.6, rigid: 0.45 };
+  }
+
+  /** The neck folds over, tendrils go slack, the sac deflates. */
+  protected deathPose(k: number, tw: number): void {
+    this.segs.forEach((n, i) => {
+      n.rotation.x = k * (0.3 + i * 0.14) + tw * 0.12 * Math.sin(this.time * 27 + i);
+      n.rotation.z = 0;
+    });
+    this.tendrils.forEach((n, i) => { n.rotation.x = 0.55 + 0.6 * k + tw * 0.4 * Math.sin(this.time * 35 + i * 2); });
+    this.sac.scaling.setAll(1 - 0.45 * k);
+    this.time += 1 / 60;
   }
 }
 
@@ -435,7 +500,6 @@ export class WardenView extends EnemyView {
   private slump = 0;
   private sparkT = 0;
   private lastStep = 0;
-  private thudDone = false;
   private land = 0;
   private headBone?: TransformNode;
 
@@ -598,24 +662,36 @@ export class WardenView extends EnemyView {
     m.holder.position.y -= (1 - Math.abs(sg)) * 0.1 * moving + 0.22 * land + 0.12 * this.slump;
   }
 
-  protected deathPose(k: number, startY: number): void {
-    const e = k * k;
-    this.root.rotation.x = e * 1.45;
-    this.root.position.y = startY - 0.9 * e;
-    this.torso.rotation.x = 0.4 * k;
-    this.head.rotation.x = 0.6 * k;
-    for (const A of this.arms) A.root.rotation.x = -1.2 * k;
-    if (k > 0.85 && !this.thudDone) {
-      this.thudDone = true;
-      burst(this.scene, this.root.position.add(new Vector3(0, -0.6, 0)), "#3a2e48", 1.6, 0.25);
-    }
+  protected reactionScale(): number { return 0.3; }
+
+  /** A heavy brute: staggers, knees buckle, then it slams down flat along the shot. */
+  protected deathProfile(): DeathProfile {
+    return { axis: "dir", tip: 1.5, heavyTip: 1.55, weakTip: 1.5, slide: 0.25, heavySlide: 0.7, spin: 0.2, stagger: 0.32, fall: this.deathTime, squash: 0.9, pool: 2.6, rigid: 0.5 };
   }
 
-  die(): void {
+  /** Knees buckle, arms trail and go slack, head lolls. */
+  protected deathPose(k: number, tw: number): void {
+    for (const L of this.legs) { L.hip.rotation.x = -0.35 * k; L.knee.rotation.x = 0.7 * Math.min(1, k * 1.6); }
+    this.torso.rotation.x = 0.35 * k;
+    this.torso.rotation.z = 0;
+    this.head.rotation.x = 0.55 * k + tw * 0.15;
+    this.head.rotation.z = 0.3 * k * (this.core.id % 2 ? 1 : -1);
+    for (const A of this.arms) {
+      A.root.rotation.x = -1.1 * k + tw * 0.2 * Math.sin(this.time * 30 + A.side);
+      A.root.rotation.z = A.side * (0.12 + 0.5 * k);
+      A.elbow.rotation.x = -0.3 * k;
+    }
+    this.time += 1 / 60;
+  }
+
+  die(info?: DeathInfo): void {
     this.shield.setEnabled(false);
-    super.die();
+    super.die(info);
   }
 }
+
+/** Heavy weapons (multi-pellet: the Trishul) knock bodies around harder. */
+const isHeavy = (weapon: number) => (GAMEPLAY.weapons[weapon]?.pellets ?? 1) > 1;
 
 /** Creates/destroys enemy views from core events and drives them each frame. */
 export class EnemyViews {
@@ -632,8 +708,16 @@ export class EnemyViews {
         : new WardenView(scene, core as Warden, root, damage);
       this.views.set(e.id, v);
     });
-    ev.on("enemyHurt", (e) => this.views.get(e.id)?.onHurt());
-    ev.on("enemyKilled", (e) => { this.views.get(e.id)?.die(); this.views.delete(e.id); });
+    ev.on("enemyHurt", (e) => this.views.get(e.id)?.onHurt(toV3(e.at), e.dir ? toV3(e.dir) : null, e.weak, isHeavy(e.weapon)));
+    ev.on("enemyKilled", (e) => {
+      const v = this.views.get(e.id);
+      this.views.delete(e.id);
+      if (!v) return;
+      // Momentum along the shot; scripted damage (no direction) falls away from the player
+      const p = world.player.pos;
+      const dir = e.dir ? toV3(e.dir) : new Vector3(e.at.x - p.x, 0, e.at.z - p.z);
+      v.die({ dir, hit: toV3(e.hit), weak: e.weak, heavy: isHeavy(e.weapon) });
+    });
     const warden = (id: number) => this.views.get(id) as WardenView | undefined;
     ev.on("shield", (e) => warden(e.id)?.setShield(e.up));
     ev.on("shieldHit", (e) => warden(e.id)?.shieldBurst(new Vector3(e.at.x, e.at.y, e.at.z)));

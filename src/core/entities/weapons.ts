@@ -7,7 +7,8 @@ import type { Player } from "./player";
 export interface DamageResult { enemy: boolean; killed: boolean }
 
 export interface WeaponContext extends CoreContext {
-  damageTarget(target: HitTarget, amount: number, point: Vec3): DamageResult;
+  /** `src` (optional) describes the shot for presentation (direction, weapon slot); it never changes the damage. */
+  damageTarget(target: HitTarget, amount: number, point: Vec3, src?: { dir: Vec3; weapon: number }): DamageResult;
 }
 
 /** One gun instance: its data, ammo and reload state. */
@@ -123,7 +124,7 @@ export class Arsenal {
       if (!heavy && i === 0) ctx.events.emit("tracer", { to: hit ? hit.point.clone() : origin.add(dir.scale(spec.range)) });
       if (!hit) continue;
       if (hit.target) {
-        const r = ctx.damageTarget(hit.target, spec.damage * hit.target.mul, hit.point);
+        const r = ctx.damageTarget(hit.target, spec.damage * hit.target.mul, hit.point, { dir, weapon: this.current });
         hitSomething = true;
         if (r.killed) killed = true;
         if (r.enemy) flesh = true;

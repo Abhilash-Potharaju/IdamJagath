@@ -2,6 +2,10 @@ import { Vec3, rotateY, wrapAngle } from "../math";
 import type { BodyId } from "../ports";
 import type { CrawlerData, EnemyType, SpitterData, WardenData } from "../../data/schemas";
 import type { CoreContext } from "../context";
+import type { HitInfo } from "../events";
+
+/** Optional source of a hit (only feeds presentation events; never changes damage or AI). */
+export interface DamageSource { dir?: Vec3; weapon?: number; mul?: number }
 import type { Player } from "./player";
 
 export interface EnemyContext extends CoreContext {
@@ -49,23 +53,24 @@ export abstract class Enemy {
     this.body = ctx.physics.createBody(new Vec3(stats.radius, stats.halfHeight, stats.radius), this.pos, "enemy-root");
   }
 
-  takeDamage(amount: number, point: Vec3): void {
+  takeDamage(amount: number, point: Vec3, src?: DamageSource): void {
     if (!this.alive) return;
     this.hp -= amount;
-    this.ctx.events.emit("enemyHurt", { id: this.id, at: Vec3.from(point) });
+    const info: HitInfo = { dir: src?.dir ? src.dir.clone() : null, weapon: src?.weapon ?? -1, weak: (src?.mul ?? 1) > 1 };
+    this.ctx.events.emit("enemyHurt", { id: this.id, at: Vec3.from(point), ...info });
     this.awake = true;
-    if (this.hp <= 0) { this.die(); return; }
+    if (this.hp <= 0) { this.die(Vec3.from(point), info); return; }
     if (this.hurtSndCd <= 0) {
       this.ctx.sound("enemy_hurt", this.pos.clone());
       this.hurtSndCd = 0.15;
     }
   }
 
-  protected die(): void {
+  protected die(hit: Vec3 = this.pos.clone(), info: HitInfo = { dir: null, weapon: -1, weak: false }): void {
     if (!this.alive) return;
     this.alive = false;
     this.ctx.sound(this.deathSound, this.pos.clone());
-    this.ctx.events.emit("enemyKilled", { id: this.id, type: this.type, at: this.pos.clone() });
+    this.ctx.events.emit("enemyKilled", { id: this.id, type: this.type, at: this.pos.clone(), hit, ...info });
     this.ctx.physics.releaseBody(this.body);
     this.ctx.onEnemyKilled(this);
   }
@@ -328,8 +333,8 @@ export class Warden extends Enemy {
     this.pos.y = data.dropHeight;
   }
 
-  takeDamage(amount: number, point: Vec3): void {
-    super.takeDamage(this.state === "stunned" ? amount * this.D.stun.damageMultiplier : amount, point);
+  takeDamage(amount: number, point: Vec3, src?: DamageSource): void {
+    super.takeDamage(this.state === "stunned" ? amount * this.D.stun.damageMultiplier : amount, point, src);
   }
 
   private setShield(up: boolean): void {
@@ -424,10 +429,10 @@ export class Warden extends Enemy {
     this.ctx.hint("warden-shield", "The Warden's shield absorbs fire — bait its charge into a wall!");
   }
 
-  protected die(): void {
+  protected die(hit?: Vec3, info?: HitInfo): void {
     if (!this.alive) return;
     this.ctx.message("THE WARDEN HAS FALLEN", 3);
     this.setShield(false);
-    super.die();
+    super.die(hit, info);
   }
 }

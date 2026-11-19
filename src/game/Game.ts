@@ -14,6 +14,7 @@ import { InputDevice } from "../engine/babylon/InputDevice";
 import { CameraRig } from "../engine/babylon/CameraRig";
 import { WeaponView } from "../engine/babylon/WeaponView";
 import { EnemyViews } from "../engine/babylon/EnemyViews";
+import { Corpses } from "../engine/babylon/Corpses";
 import { MissionView } from "../engine/babylon/MissionView";
 import { HUD } from "../engine/babylon/HUD";
 import { Audio, type SoundName } from "../engine/babylon/Audio";
@@ -182,6 +183,12 @@ export class Game {
     ev.on("land", (e) => { if (e.strength > 0.05) audio.play("land"); });
     hud.onHeartbeat = () => audio.play("heartbeat");
     ev.on("missionEnd", (e) => this.finish(e.title, e.body));
+    // Kill punch (presentation only): stronger for the Trishul and weak-spot kills
+    ev.on("enemyKilled", (e) => {
+      if (e.weapon < 0) return;
+      const heavy = (GAMEPLAY.weapons[e.weapon]?.pellets ?? 1) > 1;
+      this.camera.punch((e.weak ? 1.4 : 1) * (heavy ? 1.3 : 1) * (e.type === "warden" ? 1.6 : 1));
+    });
   }
 
   /** One fixed simulation step. */
@@ -292,6 +299,7 @@ export class Game {
       get loadProgress() { return self.loadProgress; },
       get isOver() { return self.isOver; },
       stateHash: () => w.stateHash(),
+      corpses: Corpses.for(this.scene),
     };
   }
 }

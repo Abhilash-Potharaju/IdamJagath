@@ -8,6 +8,13 @@ import type { EnemyType } from "../data/schemas";
 export type Phase = "pylons" | "cage" | "escape" | "won" | "dead";
 export type ImpactKind = "world" | "flesh" | "energy";
 
+/**
+ * How an enemy was hit (presentation only: hit reactions, death momentum). `dir` = unit direction the damage travelled
+ * (null when unknown, e.g. scripted damage), `weapon` = arsenal slot that fired (-1 = not a player weapon),
+ * `weak` = the hit landed on a weak spot (part multiplier > 1).
+ */
+export interface HitInfo { dir: Vec3 | null; weapon: number; weak: boolean }
+
 export interface GameEvents {
   sound: { name: string; at?: Vec3 };
   message: { text: string; seconds: number };
@@ -33,8 +40,9 @@ export interface GameEvents {
 
   // enemies
   enemySpawned: { id: number; type: EnemyType; body: number };
-  enemyHurt: { id: number; at: Vec3 };
-  enemyKilled: { id: number; type: EnemyType; at: Vec3 };
+  enemyHurt: { id: number; at: Vec3 } & HitInfo;
+  /** `at` = the enemy's centre; `hit` = where the killing blow landed. */
+  enemyKilled: { id: number; type: EnemyType; at: Vec3; hit: Vec3 } & HitInfo;
   shieldHit: { id: number; at: Vec3 };
   shield: { id: number; up: boolean };
   wardenLanded: { id: number; at: Vec3 };
