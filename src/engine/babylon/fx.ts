@@ -40,6 +40,47 @@ export function burst(scene: Scene, at: Vector3, hex: string, size = 0.25, secon
 
 export { glowMat };
 
+const poolMats = new WeakMap<Scene, StandardMaterial>();
+/**
+ * Shared material for the ichor pools that spread under corpses (see Corpses.ts): a dark, wet, irregular blob,
+ * deep alien red with an olive-green rim, faintly emissive so it reads at night. Fade per mesh with `visibility`.
+ */
+export function ichorPoolMaterial(scene: Scene): StandardMaterial {
+  let m = poolMats.get(scene);
+  if (m) return m;
+  const tex = canvasTex(scene, "fx-pool", 256, (c, s) => {
+    const blob = (x: number, y: number, r: number, inner: string, outer: string) => {
+      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, inner); g.addColorStop(0.75, inner); g.addColorStop(1, outer);
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    };
+    // Olive rim first (wider, faint), then the dark red body, then a darker wet core
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2 + Math.random() * 0.5, d = s * (0.1 + Math.random() * 0.14);
+      blob(s / 2 + Math.cos(a) * d, s / 2 + Math.sin(a) * d, s * (0.16 + Math.random() * 0.1), "rgba(58,52,12,0.55)", "rgba(40,40,8,0)");
+    }
+    for (let i = 0; i < 11; i++) {
+      const a = Math.random() * Math.PI * 2, d = Math.random() * s * 0.2;
+      blob(s / 2 + Math.cos(a) * d, s / 2 + Math.sin(a) * d, s * (0.12 + Math.random() * 0.12), "rgba(78,8,9,0.96)", "rgba(60,10,8,0)");
+    }
+    blob(s / 2, s / 2, s * 0.2, "rgba(34,3,4,0.98)", "rgba(40,4,5,0)");
+    // A few drips/satellite droplets
+    for (let i = 0; i < 7; i++) {
+      const a = Math.random() * Math.PI * 2, d = s * (0.32 + Math.random() * 0.12);
+      blob(s / 2 + Math.cos(a) * d, s / 2 + Math.sin(a) * d, s * (0.015 + Math.random() * 0.025), "rgba(70,10,9,0.9)", "rgba(70,10,9,0)");
+    }
+  });
+  m = new StandardMaterial("fx-poolMat", scene);
+  m.diffuseTexture = tex; m.useAlphaFromDiffuseTexture = true;
+  m.diffuseColor = new Color3(1, 1, 1);
+  m.emissiveColor = new Color3(0.09, 0.015, 0.012);
+  m.specularColor = new Color3(0.55, 0.45, 0.4); m.specularPower = 110; // wet sheen
+  m.zOffset = -3; m.backFaceCulling = false;
+  m.maxSimultaneousLights = 8;
+  poolMats.set(scene, m);
+  return m;
+}
+
 // ───────────────────────── modern shot feedback ─────────────────────────
 
 function canvasTex(scene: Scene, name: string, size: number, draw: (c: CanvasRenderingContext2D, s: number) => void): DynamicTexture {
@@ -160,9 +201,10 @@ export class Fx {
       ps.minScaleX = 1; ps.gravity = new Vector3(0, -1.2, 0); ps.minEmitPower = 1; ps.maxEmitPower = 1;
       ps.addSizeGradient(0, 0.6); ps.addSizeGradient(1, 1.8);
     });
-    this.ichor = new BurstParticles(scene, "fx-ichor", 400, dot, (ps) => {
-      ps.color1 = new Color4(0.35, 1, 0.3, 1); ps.color2 = new Color4(0.6, 0.15, 0.85, 1); ps.colorDead = new Color4(0.1, 0.3, 0.05, 0);
-      ps.minSize = 0.04; ps.maxSize = 0.11; ps.minLifeTime = 0.25; ps.maxLifeTime = 0.6;
+    this.ichor = new BurstParticles(scene, "fx-ichor", 600, dot, (ps) => {
+      // Alien ichor: dark arterial red with a sickly olive cast (matches the corpse pools, see ichorPoolMaterial)
+      ps.color1 = new Color4(0.5, 0.05, 0.05, 1); ps.color2 = new Color4(0.36, 0.3, 0.06, 1); ps.colorDead = new Color4(0.12, 0.02, 0.02, 0);
+      ps.minSize = 0.03; ps.maxSize = 0.1; ps.minLifeTime = 0.25; ps.maxLifeTime = 0.65;
       ps.gravity = new Vector3(0, -12, 0); ps.minEmitPower = 1; ps.maxEmitPower = 1;
     });
     this.smoke = new BurstParticles(scene, "fx-smoke", 200, dot, (ps) => {
@@ -188,13 +230,13 @@ export class Fx {
         const r = s * (0.08 + Math.random() * 0.18), a = Math.random() * Math.PI * 2, d = Math.random() * s * 0.3;
         const x = s / 2 + Math.cos(a) * d, y = s / 2 + Math.sin(a) * d;
         const g = c.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, "rgba(90,255,80,0.95)"); g.addColorStop(1, "rgba(40,120,30,0)");
+        g.addColorStop(0, "rgba(120,14,12,0.95)"); g.addColorStop(0.7, "rgba(84,40,10,0.6)"); g.addColorStop(1, "rgba(60,50,10,0)");
         c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
       }
     });
     const splatMat = new StandardMaterial("fx-splatMat", scene);
-    splatMat.diffuseTexture = splatTex; splatMat.useAlphaFromDiffuseTexture = true; splatMat.emissiveColor = new Color3(0.15, 0.45, 0.1);
-    splatMat.specularColor = Color3.Black(); splatMat.zOffset = -2; splatMat.backFaceCulling = false;
+    splatMat.diffuseTexture = splatTex; splatMat.useAlphaFromDiffuseTexture = true; splatMat.emissiveColor = new Color3(0.12, 0.03, 0.02);
+    splatMat.specularColor = new Color3(0.35, 0.3, 0.25); splatMat.specularPower = 80; splatMat.zOffset = -2; splatMat.backFaceCulling = false;
     for (let i = 0; i < Fx.MAX_DECALS; i++) this.holes.push(this.quad("fx-hole", 0.11, holeMat));
     for (let i = 0; i < Fx.MAX_SPLATS; i++) this.splats.push(this.quad("fx-splat", 0.5, splatMat));
 
@@ -292,6 +334,15 @@ export class Fx {
     t.mesh.lookAt(to);
     t.life = 0;
     t.max = 0.045;
+  }
+
+  /**
+   * Gore on a kill: a spray of ichor from the wound along the shot (`dir`), stronger for weak-spot / heavy kills.
+   * Exit spray follows the shot; a smaller back-spatter comes toward the shooter.
+   */
+  killSpray(at: Vector3, dir: Vector3, strength: number): void {
+    this.ichor.emit(at, dir, Math.round(14 * strength), 2.6 + 1.6 * strength, 0.45);
+    this.ichor.emit(at, dir.scale(-0.6).add(new Vector3(0, 0.6, 0)), Math.round(6 * strength), 1.8, 0.7);
   }
 
   /** Live counts (for tests). */
