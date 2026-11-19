@@ -9,7 +9,7 @@
       "windup": 0.45, "duration": 0.35, "speed": 19, "hitRange": 1.4, "damage": 18, "knockback": 10, "recover": 0.7
     },
     "weakSpots": { "eye": 1.5 },
-    "model": { "file": "spiderthing.glb", "length": 1.4, "axis": "z", "yaw": 0, "anim": "ArmatureAction", "animSpeedRef": 3.5 }
+    "model": { "file": "spiderthing.glb", "length": 1.4, "axis": "z", "yaw": 0, "anim": "ArmatureAction", "animSpeedRef": 3.5, "eyes": ["material"], "eyeColor": "#ffb020" }
   },
   "spitter": {
     "hp": 60, "halfHeight": 1.1, "radius": 0.4, "sightRange": 34,
@@ -30,6 +30,10 @@
       "hitRange": 2.4, "damage": 35, "knockback": 18, "wallStopFraction": 0.35,
       "recover": 1, "cooldownAfterRecover": 3.5, "cooldownAfterStun": 2.5
     },
-    "stun": { "duration": 3.5, "damageMultiplier": 2 }
+    "stun": { "duration": 3.5, "damageMultiplier": 2 },
+    "model": {
+      "file": "cyclops_brute.glb", "length": 3.3, "axis": "y", "yaw": 0, "anim": "Idle", "animSpeedRef": 2.6,
+      "keepInPlace": ["shield"], "clips": { "idle": "Idle" }, "eyes": ["Cyclops_Eye_Naterial"], "eyeColor": "#ff3018"
+    }
   }
 }

@@ -51,3 +51,18 @@ are timed to the reload motion in `WeaponView.ts`. Awake enemies near the player
 has distance-paced footsteps.
 
 Total: about 0.95 MB of new audio (`public/audio/fs/`), 111 decoded files with the in-house ones.
+
+## Monster models (`public/models/monsters/`)
+Skinned Sketchfab creatures (CC BY, credited from `data/assets.json`) that skin the code-driven enemies. Fit, clips,
+eye materials and kept procedural parts are set in `data/gameplay/enemies.json` (`model`); the runtime is
+`src/engine/babylon/monsterModels.ts`. Raw downloads live in `art/_public_backup/models/monsters/`.
+
+| File | Enemy | Source | Tris | Web size | Clips |
+|---|---|---|---|---|---|
+| `spiderthing.glb` | Crawler | "Spiderthing take 3", Rasmus82 | 68k | 1.67 MB | walk |
+| `alien_quadruped.glb` | Spitter | "alien monster", victory_ | 81k | 0.64 MB | walk |
+| `cyclops_brute.glb` | Warden | ["Cyclops Rig"](https://sketchfab.com/3d-models/cyclops-rig-e5cc86878c314f5bae6d7268bb7541d9), SuperKapoo913 | 11k | 0.95 MB (raw 5.2 MB) | idle; stride, roar, charge lean, stun slump, drop tuck and landing crouch are layered procedurally on its named skeleton (`WardenView.poseModel`) |
+
+Runtime presence (all models): lower roughness plus a thin clear coat (wet look), a faint blood-red glow (the albedo
+reused as emissive), glowing eyes (`eyes` material names) and the enemy's tell/flash colour on top. Single-clip
+models also crouch/rear in a windup, stretch into a lunge and breathe (generic, from the core state).

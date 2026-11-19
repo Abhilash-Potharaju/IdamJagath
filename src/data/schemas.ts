@@ -56,11 +56,15 @@ export interface PlayerData {
 export interface MonsterModelData {
   file: string;
   length: number;
-  axis: "x" | "z";
+  axis: "x" | "y" | "z";
   yaw: number;
   anim: string;
   animSpeedRef: number;
   keep?: string[];
+  keepInPlace?: string[];
+  clips?: Partial<Record<"idle" | "walk" | "run" | "attack" | "hit" | "stun" | "death", string>>;
+  eyes?: string[];
+  eyeColor?: string;
 }
 
 interface EnemyBase { hp: number; halfHeight: number; radius: number; sightRange: number }
@@ -95,6 +99,7 @@ export interface WardenData extends EnemyBase {
     hitRange: number; wallStopFraction: number; recover: number; cooldownAfterRecover: number; cooldownAfterStun: number;
   };
   stun: { duration: number; damageMultiplier: number };
+  model: MonsterModelData;
 }
 
 export interface EnemiesFile { crawler: CrawlerData; spitter: SpitterData; warden: WardenData }
@@ -124,7 +129,7 @@ export interface MissionData {
 // ───────────────────────── validation ─────────────────────────
 
 /** Minimal shape spec: "number" | "string" | "number3" | "xz" | nested object spec | [itemSpec] for arrays. */
-type Spec = "number" | "string" | "number3" | "xz" | "optString" | "optStringArray" | { [k: string]: Spec } | [Spec];
+type Spec = "number" | "string" | "number3" | "xz" | "optString" | "optStringArray" | "optStringRecord" | { [k: string]: Spec } | [Spec];
 
 function check(value: unknown, spec: Spec, path: string): void {
   const fail = (want: string) => { throw new Error(`[gameplay data] ${path}: expected ${want}, got ${JSON.stringify(value)}`); };
@@ -133,6 +138,11 @@ function check(value: unknown, spec: Spec, path: string): void {
   if (spec === "optString") { if (value !== undefined && typeof value !== "string") fail("a string or nothing"); return; }
   if (spec === "optStringArray") {
     if (value !== undefined && !(Array.isArray(value) && value.every((v) => typeof v === "string"))) fail("a string array or nothing");
+    return;
+  }
+  if (spec === "optStringRecord") {
+    if (value !== undefined && !(typeof value === "object" && value !== null && !Array.isArray(value)
+      && Object.values(value).every((v) => typeof v === "string"))) fail("an object of strings or nothing");
     return;
   }
   if (spec === "number3" || spec === "xz") {
@@ -151,7 +161,10 @@ function check(value: unknown, spec: Spec, path: string): void {
 
 const N = "number" as const, S = "string" as const;
 const hit = { damage: N, knockback: N };
-const model: Spec = { file: S, length: N, axis: S, yaw: N, anim: S, animSpeedRef: N, keep: "optStringArray" };
+const model: Spec = {
+  file: S, length: N, axis: S, yaw: N, anim: S, animSpeedRef: N, keep: "optStringArray", keepInPlace: "optStringArray",
+  clips: "optStringRecord", eyes: "optStringArray", eyeColor: "optString",
+};
 const base = { hp: N, halfHeight: N, radius: N, sightRange: N };
 const spawn: Spec = { type: S, at: "xz" };
 
@@ -185,7 +198,7 @@ const SPECS = {
         ...hit, initialCooldown: N, minRange: N, maxRange: N, windup: N, duration: N, speed: N, hitRange: N,
         wallStopFraction: N, recover: N, cooldownAfterRecover: N, cooldownAfterStun: N,
       },
-      stun: { duration: N, damageMultiplier: N },
+      stun: { duration: N, damageMultiplier: N }, model,
     },
   } as Spec,
   mission: {
@@ -207,8 +220,8 @@ export function validateEnemies(d: unknown): EnemiesFile {
   check(d, SPECS.enemies, "enemies.json");
   const e = d as EnemiesFile;
   for (const t of ENEMY_TYPES) {
-    if (e[t] && "model" in e[t] && !["x", "z"].includes((e[t] as CrawlerData).model.axis)) {
-      throw new Error(`[gameplay data] enemies.json.${t}.model.axis: expected "x" or "z"`);
+    if (e[t] && "model" in e[t] && !["x", "y", "z"].includes((e[t] as CrawlerData).model.axis)) {
+      throw new Error(`[gameplay data] enemies.json.${t}.model.axis: expected "x", "y" or "z"`);
     }
   }
   return e;
